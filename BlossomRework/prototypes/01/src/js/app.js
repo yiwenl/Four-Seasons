@@ -4,8 +4,11 @@ window.Sono     = require("./libs/sono.min.js");
 var dat = require("dat-gui");
 
 window.params = {
-	skipCount:5,
-	numParticles:128*2
+	skipCount:3,
+	numParticles:128*2,
+	windSpeed:.15,
+	noiseOffset:.02,
+	maxRadius:700
 };
 
 (function() {
@@ -33,6 +36,9 @@ window.params = {
 
 		this.gui = new dat.GUI({width:300});
 		this.gui.add(params, "skipCount", 1, 100);
+		this.gui.add(params, "windSpeed", 0, 1);
+		this.gui.add(params, "noiseOffset", 0.01, 0.05);
+		this.gui.add(params, "maxRadius", 500.0, 700.0);
 	};
 
 	p._loop = function() {

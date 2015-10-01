@@ -14,6 +14,7 @@ function SceneApp() {
 	this.easeSum = new bongiovi.EaseNumber(0, .25);
 	this._initSound();
 	bongiovi.Scene.call(this);
+	this.camera.setPerspective(65 * Math.PI/180, GL.aspectRatio, 5, 200);
 
 	window.addEventListener("resize", this.resize.bind(this));
 
@@ -22,6 +23,7 @@ function SceneApp() {
 
 	this.camera._rx.value = -.3;
 	this.camera._ry.value = -.1;
+	this.camera.radius.value = 100;
 
 	this.resize();
 }
@@ -111,6 +113,7 @@ p.render = function() {
 	var skipCount = Math.floor(params.skipCount);
 	if(this.count % skipCount === 0) {
 		this.updateFbo();
+		this._vRender.tick();
 		this.count = 0;
 	}
 	var percent = this.count / skipCount;
@@ -121,8 +124,9 @@ p.render = function() {
 	
 	this._vAxis.render();
 	this._vDotPlane.render();
-	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
-
+	// gl.disable(gl.CULL_FACE);
+	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera);
+	// gl.enable(gl.CULL_FACE);
 
 	GL.setMatrices(this.cameraOtho);
 	GL.rotate(this.rotationFront);

@@ -21,6 +21,9 @@ p.render = function(texture, textureExtra) {
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
 	this.shader.uniform("time", "uniform1f", this._count);
+	this.shader.uniform("maxRadius", "uniform1f", params.maxRadius);
+	this.shader.uniform("windSpeed", "uniform1f", params.windSpeed);
+	this.shader.uniform("noiseOffset", "uniform1f", params.noiseOffset);
 	texture.bind(0);
 
 	if(textureExtra) {
