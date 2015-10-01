@@ -6,13 +6,13 @@ var ViewSave = require("./ViewSave");
 var ViewSaveExtra = require("./ViewSaveExtra");
 var ViewRender = require("./ViewRender");
 var ViewSimulation = require("./ViewSimulation");
+var ViewSky = require("./ViewSky");
 
 function SceneApp() {
 	gl = GL.gl;
 	this.sum = 0;
 	this.count = 0;
 	this.easeSum = new bongiovi.EaseNumber(0, .25);
-	this._initSound();
 	bongiovi.Scene.call(this);
 	this.camera.setPerspective(85 * Math.PI/180, GL.aspectRatio, 5, 200);
 
@@ -32,25 +32,10 @@ function SceneApp() {
 
 var p = SceneApp.prototype = new bongiovi.Scene();
 
-p._initSound = function() {
-	var that = this;
-	this.soundOffset = 0;
-	this.preSoundOffset = 0;
-	this.sound = Sono.load({
-	    url: ['assets/audio/Oscillate.mp3'],
-	    volume: 0.0,
-	    loop: true,
-	    onComplete: function(sound) {
-	    	console.debug("Sound Loaded");
-	    	that.analyser = sound.effect.analyser(256);
-	    	sound.play();
-	    }
-	});
-};
-
 p._initTextures = function() {
 	console.log('Init Textures');
 	if(!gl) gl = GL.gl;
+	this._textureSky = new bongiovi.GLTexture(images.bg);
 
 	var num = params.numParticles;
 	var o = {
@@ -71,6 +56,7 @@ p._initViews = function() {
 	this._vCopy      = new bongiovi.ViewCopy();
 	this._vRender    = new ViewRender();
 	this._vSim       = new ViewSimulation();
+	this._vSky 		   = new ViewSky();
 
 
 	GL.setMatrices(this.cameraOtho);
@@ -123,16 +109,15 @@ p.render = function() {
 	GL.setViewport(0, 0, GL.width, GL.height);
 	this._getSoundData();
 	
-	this._vAxis.render();
-	this._vDotPlane.render();
-	// gl.disable(gl.CULL_FACE);
+	// this._vAxis.render();
+	// this._vDotPlane.render();
+	this._vSky.render(this._textureSky);
 	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera);
-	// gl.enable(gl.CULL_FACE);
 
-	GL.setMatrices(this.cameraOtho);
-	GL.rotate(this.rotationFront);
-	GL.setViewport(0, 0, 512, 512);
-	this._vCopy.render(this._fboExtras.getTexture());
+	// GL.setMatrices(this.cameraOtho);
+	// GL.rotate(this.rotationFront);
+	// GL.setViewport(0, 0, 512, 512);
+	// this._vCopy.render(this._fboExtras.getTexture());
 };
 
 

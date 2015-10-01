@@ -26,19 +26,6 @@ const vec3 AXIS_X = vec3(1.0, 0.0, 0.0);
 const vec3 AXIS_Y = vec3(0.0, 1.0, 0.0);
 const vec3 AXIS_Z = vec3(0.0, 0.0, 1.0);
 
-mat4 rotationMatrix(vec3 axis, float angle) {
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0 - c;
-    
-    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
-                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
-                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
-                0.0,                                0.0,                                0.0,                                1.0);
-}
-
-
 
 vec4 quat_from_axis_angle(vec3 axis, float angle) { 
 	vec4 qr;
@@ -64,12 +51,6 @@ void main(void) {
 	vec3 extras = texture2D(textureExtra, uvExtra).rgb;
 	pos *= extras.z * 3.0 + 2.0;
 
-
-	// mat4 rotX = rotationMatrix(AXIS_X, rotation.r + time * mix(extras.r, 1.0, .5));
-	// mat4 rotY = rotationMatrix(AXIS_Y, rotation.g + time * mix(extras.g, 1.0, .5));
-	// mat4 rotZ = rotationMatrix(AXIS_Z, rotation.b + time * mix(extras.g, 1.0, .5));
-
-	// vec4 temp = rotX * rotY * rotZ * vec4(pos, 1.0);
 	float theta = time * mix(extras.g, 1.0, .5);
 	vec4 temp = vec4(1.0);
 	temp.rgb = rotate_vertex_position(pos, rotation, theta );
@@ -91,7 +72,5 @@ void main(void) {
     gl_PointSize = 1.0;
     vColor = vec3(1.0);
 
-
-    // vNormal = (rotX * rotY * rotZ * (vec4(aNormal, 1.0))).rgb;
     vNormal = rotate_vertex_position(aNormal, rotation, theta );
 }

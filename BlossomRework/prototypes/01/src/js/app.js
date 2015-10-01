@@ -15,13 +15,27 @@ window.params = {
 	var SceneApp = require("./SceneApp");
 
 	App = function() {
+
+		var loader = new bongiovi.SimpleImageLoader();
+		var assets = ["assets/bg.jpg"];
+
+		loader.load(assets, this, this._onImageLoaded, this._onImageProgress)
+	}
+
+	var p = App.prototype;
+
+	p._onImageProgress = function(p) {
+		console.log("Loading : ", p);
+	};
+
+	p._onImageLoaded = function(imgs) {
+		window.images = imgs;
+
 		if(document.body) this._init();
 		else {
 			window.addEventListener("load", this._init.bind(this));
 		}
-	}
-
-	var p = App.prototype;
+	};
 
 	p._init = function() {
 		this.canvas = document.createElement("canvas");
@@ -38,7 +52,7 @@ window.params = {
 		this.gui.add(params, "skipCount", 1, 100);
 		this.gui.add(params, "windSpeed", 0, 1);
 		this.gui.add(params, "noiseOffset", 0.01, 0.05);
-		this.gui.add(params, "maxRadius", 500.0, 700.0);
+		this.gui.add(params, "maxRadius", 500.0, 1500.0);
 	};
 
 	p._loop = function() {
