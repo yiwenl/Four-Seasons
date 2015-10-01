@@ -2,6 +2,7 @@
 
 precision mediump float;
 uniform sampler2D texture;
+uniform sampler2D textureExtra;
 varying vec2 vTextureCoord;
 
 
@@ -79,12 +80,40 @@ uniform float time;
 void main(void) {
     if(vTextureCoord.y < .5) {
 		if(vTextureCoord.x < .5) {
-			vec3 pos = texture2D(texture, vTextureCoord).rgb;
+			vec2 uvVel    = vTextureCoord + vec2(.5, .0);
+			vec2 uvOrgPos = vTextureCoord + vec2(.5, .5);
+			vec3 pos      = texture2D(texture, vTextureCoord).rgb;
+			vec3 vel      = texture2D(texture, uvVel).rgb;
+			pos           += vel;
+
+			const float maxRadius = 700.0;
+			if(length(pos) > maxRadius) {
+				pos = texture2D(texture, uvOrgPos).rgb;
+			}
+
+			
 			gl_FragColor = vec4(pos, 1.0);
 		} else {
-			gl_FragColor = vec4(0.0);	
+			vec2 uvPos = vTextureCoord + vec2(-.5, .0);
+			vec2 uvExtra = vTextureCoord + vec2(.0, .5);
+			vec3 pos = texture2D(texture, uvPos).rgb;
+			vec3 vel = texture2D(texture, vTextureCoord).rgb;
+			vec3 extras = texture2D(textureExtra, uvExtra).rgb;
+
+
+			float posOffset = .02 * mix(extras.r , 1.0, .5);
+			float ax = snoise(pos.x*posOffset + time, pos.y*posOffset + time, pos.z*posOffset + time) + .25;
+			float ay = snoise(pos.y*posOffset + time, pos.z*posOffset + time, pos.x*posOffset + time) + .4;
+			float az = snoise(pos.z*posOffset + time, pos.x*posOffset + time, pos.y*posOffset + time);
+
+			float windStrength = .15 * extras.g + .01;
+			vel += vec3(ax, ay, az) * windStrength;
+
+			vel *= .995;
+
+			gl_FragColor = vec4(vel, 1.0);
 		}
     } else {
-    	gl_FragColor = vec4(0.0);
+    	gl_FragColor = texture2D(texture, vTextureCoord);
     }
 }

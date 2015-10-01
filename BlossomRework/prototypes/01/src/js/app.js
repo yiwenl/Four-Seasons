@@ -4,7 +4,8 @@ window.Sono     = require("./libs/sono.min.js");
 var dat = require("dat-gui");
 
 window.params = {
-	numParticles:512
+	skipCount:5,
+	numParticles:128*2
 };
 
 (function() {
@@ -30,7 +31,8 @@ window.params = {
 		this._scene = new SceneApp();
 		bongiovi.Scheduler.addEF(this, this._loop);
 
-		// this.gui = new dat.GUI({width:300});
+		this.gui = new dat.GUI({width:300});
+		this.gui.add(params, "skipCount", 1, 100);
 	};
 
 	p._loop = function() {

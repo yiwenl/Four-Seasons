@@ -1,16 +1,16 @@
-// ViewSave.js
+// ViewSaveExtra.js
 
 var GL = bongiovi.GL;
 var gl;
 var glslify = require("glslify");
 var random = function(min, max) { return min + Math.random() * (max - min);	};
 
-function ViewSave() {
+function ViewSaveExtra() {
 	bongiovi.View.call(this, glslify("../shaders/save.vert"), glslify("../shaders/save.frag"));
 }
 
-var p = ViewSave.prototype = new bongiovi.View();
-p.constructor = ViewSave;
+var p = ViewSaveExtra.prototype = new bongiovi.View();
+p.constructor = ViewSaveExtra;
 
 
 p._init = function() {
@@ -27,20 +27,29 @@ p._init = function() {
 	var ux, uy;
 	var range = 100.0;
 
+
 	for(var j=0; j<numParticles; j++) {
 		for(var i=0; i<numParticles; i++) {
-			var pos = [random(-range, range), random(-range, range), random(-range, range)];
-			positions.push(pos);
 
 			ux = i/numParticles-1.0 + .5/numParticles;
 			uy = j/numParticles-1.0 + .5/numParticles;
+
+			//	ROTATION + SIZE
+			var rotation = [Math.random()*Math.PI*2, Math.random()*Math.PI*2, random(10, 20) ];
+			positions.push(rotation);
 			coords.push([ux, uy]);
 			indices.push(count);
 			count ++;
 
+			//	UV OFFSET
+			positions.push([0.0, 0.0, 0.0]);
+			coords.push([ux+1.0, uy]);
+			indices.push(count);
+			count ++;
 
-			positions.push(pos);
-			coords.push([ux+1.0, uy+1.0]);
+			//	RANDOMS
+			positions.push([Math.random(), Math.random(), Math.random()]);
+			coords.push([ux, uy+1.0]);
 			indices.push(count);
 			count ++;
 
@@ -60,4 +69,4 @@ p.render = function() {
 	GL.draw(this.mesh);
 };
 
-module.exports = ViewSave;
+module.exports = ViewSaveExtra;

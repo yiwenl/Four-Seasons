@@ -3,12 +3,14 @@
 var GL = bongiovi.GL, gl;
 var SoundCloudLoader = require("./SoundCloudLoader");
 var ViewSave = require("./ViewSave");
+var ViewSaveExtra = require("./ViewSaveExtra");
 var ViewRender = require("./ViewRender");
 var ViewSimulation = require("./ViewSimulation");
 
 function SceneApp() {
 	gl = GL.gl;
 	this.sum = 0;
+	this.count = 0;
 	this.easeSum = new bongiovi.EaseNumber(0, .25);
 	this._initSound();
 	bongiovi.Scene.call(this);
@@ -54,16 +56,18 @@ p._initTextures = function() {
 	}
 	this._fboCurrent 	= new bongiovi.FrameBuffer(num*2, num*2, o);
 	this._fboTarget 	= new bongiovi.FrameBuffer(num*2, num*2, o);
+	this._fboExtras 	= new bongiovi.FrameBuffer(num*2, num*2, o);
 };
 
 p._initViews = function() {
 	console.log('Init Views');
-	this._vAxis     = new bongiovi.ViewAxis();
-	this._vDotPlane = new bongiovi.ViewDotPlane();
-	this._vSave     = new ViewSave();
-	this._vCopy 	= new bongiovi.ViewCopy();
-	this._vRender 	= new ViewRender();
-	this._vSim 		= new ViewSimulation();
+	this._vAxis      = new bongiovi.ViewAxis();
+	this._vDotPlane  = new bongiovi.ViewDotPlane();
+	this._vSave      = new ViewSave();
+	this._vSaveExtra = new ViewSaveExtra();
+	this._vCopy      = new bongiovi.ViewCopy();
+	this._vRender    = new ViewRender();
+	this._vSim       = new ViewSimulation();
 
 
 	GL.setMatrices(this.cameraOtho);
@@ -73,6 +77,11 @@ p._initViews = function() {
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	this._vSave.render();
 	this._fboCurrent.unbind();
+
+	this._fboExtras.bind();
+	GL.setViewport(0, 0, this._fboExtras.width, this._fboExtras.height);
+	this._vSaveExtra.render();
+	this._fboExtras.unbind();
 };
 
 
@@ -83,7 +92,7 @@ p.updateFbo = function() {
 	this._fboTarget.bind();
 	GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
 	GL.clear(0, 0, 0, 0);
-	this._vSim.render(this._fboCurrent.getTexture() );
+	this._vSim.render(this._fboCurrent.getTexture(), this._fboExtras.getTexture());
 	this._fboTarget.unbind();
 
 
@@ -99,20 +108,26 @@ p.updateFbo = function() {
 
 
 p.render = function() {
-	this.updateFbo();
+	var skipCount = Math.floor(params.skipCount);
+	if(this.count % skipCount === 0) {
+		this.updateFbo();
+		this.count = 0;
+	}
+	var percent = this.count / skipCount;
+
+	this.count ++;
 	GL.setViewport(0, 0, GL.width, GL.height);
 	this._getSoundData();
 	
 	this._vAxis.render();
 	this._vDotPlane.render();
-	this._vRender.render(this._fboCurrent.getTexture());
+	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent);
 
 
 	GL.setMatrices(this.cameraOtho);
 	GL.rotate(this.rotationFront);
-
-	// GL.setViewport(0, 0, this._fboCurrent.width, this._fboCurrent.height);
-	// this._vCopy.render(this._fboCurrent.getTexture());
+	GL.setViewport(0, 0, 512, 512);
+	this._vCopy.render(this._fboExtras.getTexture());
 };
 
 

@@ -17,16 +17,19 @@ p._init = function() {
 	this.mesh = bongiovi.MeshUtils.createPlane(2, 2, 1);
 };
 
-p.render = function(texture) {
-	if(!this.shader.isReady() ) return;
-
+p.render = function(texture, textureExtra) {
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
 	this.shader.uniform("time", "uniform1f", this._count);
 	texture.bind(0);
+
+	if(textureExtra) {
+		this.shader.uniform("textureExtra", "uniform1i", 1);
+		textureExtra.bind(1);
+	}
 	GL.draw(this.mesh);
 
-	this._count += .01;
+	this._count += .008;
 };
 
 module.exports = ViewSimulation;
