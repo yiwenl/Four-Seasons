@@ -27,15 +27,24 @@ float getDepth(float z, float n, float f) {
 }
 
 
-void main(void) {
-    // gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+float exponentialIn(float t) {
+    return t == 0.0 ? t : pow(2.0, 10.0 * (t - 1.0));
+}
 
+
+
+float exponentialOut(float t) {
+    return t == 1.0 ? t : 1.0 - pow(2.0, -10.0 * t);
+}
+
+
+void main(void) {
     vec4 color = texture2D(texture, vTextureCoord);
     vec4 blur = texture2D(textureBlur, vTextureCoord);
     vec4 depth = texture2D(textureDepth, vTextureCoord);
 
-    // float d = getDepth(depth.r, zNear, zFar);
-    float d = depth.r;
+    float d = getDepth(depth.r, zNear, zFar);
+    // float d = depth.r;
 
     if(depth.r < focus) {
     	d = map(depth.r, 0.0, focus, 0.0, 1.0);
@@ -43,9 +52,10 @@ void main(void) {
     	d = map(depth.r, focus, 1.0, 1.0, 0.0);
     }
 
-    // d = contrast(d, depthContrast);
+    d = contrast(d, depthContrast);
+    d = exponentialIn(d);
 
-    // gl_FragColor = mix(blur, color, d);
+    gl_FragColor = mix(blur, color, d);
     // gl_FragColor = mix(blur, color, 1.0-depth.r);
-    gl_FragColor = vec4(vec3(d), 1.0);
+    // gl_FragColor = vec4(vec3(d), 1.0);
 }

@@ -121,7 +121,7 @@ p.render = function() {
 	
 	this._fboRender.bind();	
 	GL.clear(0, 0, 0, 0);
-	// this._vSky.render(this._textureSky);
+	this._vSky.render(this._textureSky);
 	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera);
 	this._fboRender.unbind();
 
@@ -129,6 +129,7 @@ p.render = function() {
 	GL.rotate(this.rotationFront);
 	// this._vCopy.render(this._fboRender.getDepthTexture());
 
+	this._vVBlur.blur = this._vHBlur.blur = params.blur;
 	this._fboVBlur.bind();
 	GL.setViewport(0, 0, this._fboVBlur.width, this._fboVBlur.height);
 	GL.clear();
@@ -149,7 +150,7 @@ p.render = function() {
 	this._vCopy.render(this._fboRender.getTexture());
 
 	GL.setViewport(0, subscreenSize, subscreenSize, subscreenSize);
-	this._vCopy.render(this._fboRender.getDepthTexture());
+	this._vCopy.render(this._fboFinalBlur.getTexture());
 
 
 	// GL.setViewport(subscreenSize, 0, subscreenSize, subscreenSize);

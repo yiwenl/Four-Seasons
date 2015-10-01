@@ -26,7 +26,7 @@ void main(void) {
 
     gl_FragColor.rgb = ambient + lightColor * lambert * lightWeight;
     // gl_FragColor.rgb *= D;
-    gl_FragColor.rgb = vec3(D);
+    // gl_FragColor.rgb = vec3(D);
 
 
     // gl_FragColor.rgb = (vNormal + 1.0) * .5;

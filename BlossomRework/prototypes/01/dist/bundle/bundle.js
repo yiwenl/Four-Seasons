@@ -4542,7 +4542,7 @@ p.render = function() {
 	
 	this._fboRender.bind();	
 	GL.clear(0, 0, 0, 0);
-	// this._vSky.render(this._textureSky);
+	this._vSky.render(this._textureSky);
 	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera);
 	this._fboRender.unbind();
 
@@ -4550,6 +4550,7 @@ p.render = function() {
 	GL.rotate(this.rotationFront);
 	// this._vCopy.render(this._fboRender.getDepthTexture());
 
+	this._vVBlur.blur = this._vHBlur.blur = params.blur;
 	this._fboVBlur.bind();
 	GL.setViewport(0, 0, this._fboVBlur.width, this._fboVBlur.height);
 	GL.clear();
@@ -4570,7 +4571,7 @@ p.render = function() {
 	this._vCopy.render(this._fboRender.getTexture());
 
 	GL.setViewport(0, subscreenSize, subscreenSize, subscreenSize);
-	this._vCopy.render(this._fboRender.getDepthTexture());
+	this._vCopy.render(this._fboFinalBlur.getTexture());
 
 
 	// GL.setViewport(subscreenSize, 0, subscreenSize, subscreenSize);
@@ -4696,7 +4697,7 @@ var gl;
 
 
 function ViewPost() {
-	bongiovi.View.call(this, null, "#define GLSLIFY 1\nprecision mediump float;\n\n\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\t\nuniform sampler2D textureBlur;\t\nuniform sampler2D textureDepth;\t\n\nuniform float focus;\nuniform float depthContrast;\n\nuniform float zFar;\nuniform float zNear;\n\nfloat contrast(float value, float scale) {\n\treturn (value - .5) * scale + .5;\n}\n\nfloat map(float value, float sx, float sy, float tx, float ty) {\n\tfloat p = (value - sx) / ( sy - sx);\n\t// p = clamp(p, 0.0, 1.0);\n\treturn p * (ty- tx) + tx;\n}\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\n\nvoid main(void) {\n    // gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n\n    vec4 color = texture2D(texture, vTextureCoord);\n    vec4 blur = texture2D(textureBlur, vTextureCoord);\n    vec4 depth = texture2D(textureDepth, vTextureCoord);\n\n    // float d = getDepth(depth.r, zNear, zFar);\n    float d = depth.r;\n\n    if(depth.r < focus) {\n    \td = map(depth.r, 0.0, focus, 0.0, 1.0);\n    } else {\n    \td = map(depth.r, focus, 1.0, 1.0, 0.0);\n    }\n\n    // d = contrast(d, depthContrast);\n\n    // gl_FragColor = mix(blur, color, d);\n    // gl_FragColor = mix(blur, color, 1.0-depth.r);\n    gl_FragColor = vec4(vec3(d), 1.0);\n}");
+	bongiovi.View.call(this, null, "#define GLSLIFY 1\nprecision mediump float;\n\n\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\t\nuniform sampler2D textureBlur;\t\nuniform sampler2D textureDepth;\t\n\nuniform float focus;\nuniform float depthContrast;\n\nuniform float zFar;\nuniform float zNear;\n\nfloat contrast(float value, float scale) {\n\treturn (value - .5) * scale + .5;\n}\n\nfloat map(float value, float sx, float sy, float tx, float ty) {\n\tfloat p = (value - sx) / ( sy - sx);\n\t// p = clamp(p, 0.0, 1.0);\n\treturn p * (ty- tx) + tx;\n}\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\n\nfloat exponentialIn(float t) {\n    return t == 0.0 ? t : pow(2.0, 10.0 * (t - 1.0));\n}\n\n\n\nfloat exponentialOut(float t) {\n    return t == 1.0 ? t : 1.0 - pow(2.0, -10.0 * t);\n}\n\n\nvoid main(void) {\n    vec4 color = texture2D(texture, vTextureCoord);\n    vec4 blur = texture2D(textureBlur, vTextureCoord);\n    vec4 depth = texture2D(textureDepth, vTextureCoord);\n\n    float d = getDepth(depth.r, zNear, zFar);\n    // float d = depth.r;\n\n    if(depth.r < focus) {\n    \td = map(depth.r, 0.0, focus, 0.0, 1.0);\n    } else {\n    \td = map(depth.r, focus, 1.0, 1.0, 0.0);\n    }\n\n    d = contrast(d, depthContrast);\n    d = exponentialIn(d);\n\n    gl_FragColor = mix(blur, color, d);\n    // gl_FragColor = mix(blur, color, 1.0-depth.r);\n    // gl_FragColor = vec4(vec3(d), 1.0);\n}");
 }
 
 var p = ViewPost.prototype = new bongiovi.View();
@@ -4732,7 +4733,7 @@ var gl;
 
 function ViewRender() {
 	this.time = Math.random() * 0xFF;
-	bongiovi.View.call(this, "#define GLSLIFY 1\n// line.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\nattribute vec2 aUVOffset;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\nuniform float percent;\nuniform float time;\nuniform float maxRadius;\n\n\nvarying vec2 vTextureCoord;\nvarying vec3 vColor;\nvarying vec3 vNormal;\nvarying float vOpacity;\nvarying float vDepth;\n\nconst vec3 AXIS_X = vec3(1.0, 0.0, 0.0);\nconst vec3 AXIS_Y = vec3(0.0, 1.0, 0.0);\nconst vec3 AXIS_Z = vec3(0.0, 0.0, 1.0);\n\n\nvec4 quat_from_axis_angle(vec3 axis, float angle) { \n\tvec4 qr;\n\tfloat half_angle = (angle * 0.5);\n\tqr.x = axis.x * sin(half_angle);\n\tqr.y = axis.y * sin(half_angle);\n\tqr.z = axis.z * sin(half_angle);\n\tqr.w = cos(half_angle);\n\treturn qr;\n}\n\nvec3 rotate_vertex_position(vec3 pos, vec3 axis, float angle) { \n\tvec4 q = quat_from_axis_angle(axis, angle);\n\tvec3 v = pos.xyz;\n\treturn v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);\n}\n\nvoid main(void) {\n\tvec3 pos = aVertexPosition;\n\tvec2 uv = aUVOffset * .5;\n\tvec2 uvExtra = uv + vec2(.0, .5);\n\tvec3 rotation = normalize(texture2D(textureExtra, uv).rgb);\n\tvec3 extras = texture2D(textureExtra, uvExtra).rgb;\n\tpos *= extras.z * 3.0 + 2.0;\n\n\tfloat theta = time * mix(extras.g, 1.0, .5);\n\tvec4 temp = vec4(1.0);\n\ttemp.rgb = rotate_vertex_position(pos, rotation, theta );\n\n\tvec3 posCurrent = texture2D(texture, uv).rgb;\n\tvec3 posNext = texture2D(textureNext, uv).rgb;\n\tif(length(posNext) - length(posCurrent) < -(maxRadius*.5)) posNext = normalize(posCurrent) * maxRadius;\n\telse vOpacity = 1.0;\n\n\ttemp.xyz += mix(posCurrent, posNext, percent);\n\ttemp.xyz *= .1;\n\n\n\tvec4 V = uPMatrix * (uMVMatrix * temp);;\n    gl_Position = V;\n    vDepth = V.z / V.w;\n    vTextureCoord = aTextureCoord;\n\n    gl_PointSize = 1.0;\n    vColor = vec3(1.0);\n\n    vNormal = rotate_vertex_position(aNormal, rotation, theta );\n}", "#define GLSLIFY 1\nprecision mediump float;\n\nvarying vec3 vColor;\nvarying vec3 vNormal;\n\nconst vec3 ambient = vec3(.1);\nconst vec3 lightDir = vec3(1.0);\nconst vec3 lightColor = vec3(1.0);\nconst float lightWeight = .9;\nvarying float vOpacity;\nvarying float vDepth;\n\nuniform float zFar;\nuniform float zNear;\n\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\nvoid main(void) {\n    gl_FragColor = vec4(vColor, vOpacity);\n\n    float lambert = max(dot(vNormal, normalize(lightDir)), 0.0);\n    float D = 1.0-getDepth(vDepth, zNear, zFar);\n\n    gl_FragColor.rgb = ambient + lightColor * lambert * lightWeight;\n    // gl_FragColor.rgb *= D;\n    gl_FragColor.rgb = vec3(D);\n\n\n    // gl_FragColor.rgb = (vNormal + 1.0) * .5;\n}");
+	bongiovi.View.call(this, "#define GLSLIFY 1\n// line.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\nattribute vec2 aUVOffset;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\nuniform float percent;\nuniform float time;\nuniform float maxRadius;\n\n\nvarying vec2 vTextureCoord;\nvarying vec3 vColor;\nvarying vec3 vNormal;\nvarying float vOpacity;\nvarying float vDepth;\n\nconst vec3 AXIS_X = vec3(1.0, 0.0, 0.0);\nconst vec3 AXIS_Y = vec3(0.0, 1.0, 0.0);\nconst vec3 AXIS_Z = vec3(0.0, 0.0, 1.0);\n\n\nvec4 quat_from_axis_angle(vec3 axis, float angle) { \n\tvec4 qr;\n\tfloat half_angle = (angle * 0.5);\n\tqr.x = axis.x * sin(half_angle);\n\tqr.y = axis.y * sin(half_angle);\n\tqr.z = axis.z * sin(half_angle);\n\tqr.w = cos(half_angle);\n\treturn qr;\n}\n\nvec3 rotate_vertex_position(vec3 pos, vec3 axis, float angle) { \n\tvec4 q = quat_from_axis_angle(axis, angle);\n\tvec3 v = pos.xyz;\n\treturn v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);\n}\n\nvoid main(void) {\n\tvec3 pos = aVertexPosition;\n\tvec2 uv = aUVOffset * .5;\n\tvec2 uvExtra = uv + vec2(.0, .5);\n\tvec3 rotation = normalize(texture2D(textureExtra, uv).rgb);\n\tvec3 extras = texture2D(textureExtra, uvExtra).rgb;\n\tpos *= extras.z * 3.0 + 2.0;\n\n\tfloat theta = time * mix(extras.g, 1.0, .5);\n\tvec4 temp = vec4(1.0);\n\ttemp.rgb = rotate_vertex_position(pos, rotation, theta );\n\n\tvec3 posCurrent = texture2D(texture, uv).rgb;\n\tvec3 posNext = texture2D(textureNext, uv).rgb;\n\tif(length(posNext) - length(posCurrent) < -(maxRadius*.5)) posNext = normalize(posCurrent) * maxRadius;\n\telse vOpacity = 1.0;\n\n\ttemp.xyz += mix(posCurrent, posNext, percent);\n\ttemp.xyz *= .1;\n\n\n\tvec4 V = uPMatrix * (uMVMatrix * temp);;\n    gl_Position = V;\n    vDepth = V.z / V.w;\n    vTextureCoord = aTextureCoord;\n\n    gl_PointSize = 1.0;\n    vColor = vec3(1.0);\n\n    vNormal = rotate_vertex_position(aNormal, rotation, theta );\n}", "#define GLSLIFY 1\nprecision mediump float;\n\nvarying vec3 vColor;\nvarying vec3 vNormal;\n\nconst vec3 ambient = vec3(.1);\nconst vec3 lightDir = vec3(1.0);\nconst vec3 lightColor = vec3(1.0);\nconst float lightWeight = .9;\nvarying float vOpacity;\nvarying float vDepth;\n\nuniform float zFar;\nuniform float zNear;\n\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\nvoid main(void) {\n    gl_FragColor = vec4(vColor, vOpacity);\n\n    float lambert = max(dot(vNormal, normalize(lightDir)), 0.0);\n    float D = 1.0-getDepth(vDepth, zNear, zFar);\n\n    gl_FragColor.rgb = ambient + lightColor * lambert * lightWeight;\n    // gl_FragColor.rgb *= D;\n    // gl_FragColor.rgb = vec3(D);\n\n\n    // gl_FragColor.rgb = (vNormal + 1.0) * .5;\n}");
 }
 
 var p = ViewRender.prototype = new bongiovi.View();
@@ -5121,8 +5122,9 @@ window.params = {
 	windSpeed:.225,
 	noiseOffset:.02,
 	maxRadius:1000,
-	focusLength:.5,
-	depthContrast:1.0
+	focusLength:.975,
+	depthContrast:1.0,
+	blur:1.0
 };
 
 (function() {
@@ -5167,8 +5169,9 @@ window.params = {
 		this.gui.add(params, "windSpeed", 0, 1);
 		this.gui.add(params, "noiseOffset", 0.01, 0.05);
 		this.gui.add(params, "maxRadius", 500.0, 1500.0);
-		this.gui.add(params, "focusLength", 0.0, 1.0);
+		this.gui.add(params, "focusLength", 0.9, 1.0);
 		this.gui.add(params, "depthContrast", 1.0, 5.0);
+		this.gui.add(params, "blur", 0.0, 5.0);
 	};
 
 	p._loop = function() {
