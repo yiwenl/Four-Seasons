@@ -7,6 +7,8 @@ var ViewSaveExtra = require("./ViewSaveExtra");
 var ViewRender = require("./ViewRender");
 var ViewSimulation = require("./ViewSimulation");
 var ViewSky = require("./ViewSky");
+var ViewBlur = require("./ViewBlur");
+var ViewPost = require("./ViewPost");
 
 function SceneApp() {
 	gl = GL.gl;
@@ -23,6 +25,7 @@ function SceneApp() {
 
 	this.camera._rx.value = -.3;
 	this.camera._ry.value = -.1;
+	this.camera.radius.setTo(90);
 	this.camera.radius.value = 100;
 	this.camera.center[1] = -30.0;
 
@@ -45,6 +48,11 @@ p._initTextures = function() {
 	this._fboCurrent 	= new bongiovi.FrameBuffer(num*2, num*2, o);
 	this._fboTarget 	= new bongiovi.FrameBuffer(num*2, num*2, o);
 	this._fboExtras 	= new bongiovi.FrameBuffer(num*2, num*2, o);
+
+	this._fboRender 	= new bongiovi.FrameBuffer(GL.width, GL.height, o);
+	var blurSize 		= 256*2;
+	this._fboVBlur 		= new bongiovi.FrameBuffer(blurSize, blurSize);
+	this._fboFinalBlur  = new bongiovi.FrameBuffer(blurSize, blurSize);
 };
 
 p._initViews = function() {
@@ -57,6 +65,9 @@ p._initViews = function() {
 	this._vRender    = new ViewRender();
 	this._vSim       = new ViewSimulation();
 	this._vSky 		   = new ViewSky();
+	this._vVBlur     = new ViewBlur(true);
+	this._vHBlur     = new ViewBlur(false);
+	this._vPost 	 = new ViewPost();
 
 
 	GL.setMatrices(this.cameraOtho);
@@ -107,51 +118,45 @@ p.render = function() {
 
 	this.count ++;
 	GL.setViewport(0, 0, GL.width, GL.height);
-	this._getSoundData();
 	
-	// this._vAxis.render();
-	// this._vDotPlane.render();
-	this._vSky.render(this._textureSky);
+	this._fboRender.bind();	
+	GL.clear(0, 0, 0, 0);
+	// this._vSky.render(this._textureSky);
 	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera);
+	this._fboRender.unbind();
 
-	// GL.setMatrices(this.cameraOtho);
-	// GL.rotate(this.rotationFront);
-	// GL.setViewport(0, 0, 512, 512);
-	// this._vCopy.render(this._fboExtras.getTexture());
+	GL.setMatrices(this.cameraOtho);
+	GL.rotate(this.rotationFront);
+	// this._vCopy.render(this._fboRender.getDepthTexture());
+
+	this._fboVBlur.bind();
+	GL.setViewport(0, 0, this._fboVBlur.width, this._fboVBlur.height);
+	GL.clear();
+	this._vVBlur.render(this._fboRender.getTexture());
+	this._fboVBlur.unbind();
+
+	this._fboFinalBlur.bind();
+	GL.setViewport(0, 0, this._fboFinalBlur.width, this._fboFinalBlur.height);
+	GL.clear();
+	this._vHBlur.render(this._fboVBlur.getTexture());
+	this._fboFinalBlur.unbind();
+
+	// GL.setViewport(0, 0, this._fboVBlur.width, this._fboVBlur.height);
+
+	// var subscreenSize = Math.min(window.innerWidth, window.innerHeight) /2;
+	var subscreenSize = 256;
+	GL.setViewport(0, 0, subscreenSize, subscreenSize);
+	this._vCopy.render(this._fboRender.getTexture());
+
+	GL.setViewport(0, subscreenSize, subscreenSize, subscreenSize);
+	this._vCopy.render(this._fboRender.getDepthTexture());
+
+
+	// GL.setViewport(subscreenSize, 0, subscreenSize, subscreenSize);
+	GL.setViewport(0, 0, GL.width, GL.height);
+	this._vPost.render(this._fboRender.getTexture(), this._fboFinalBlur.getTexture(), this._fboRender.getDepthTexture(), this.camera);
 };
 
-
-
-p._getSoundData = function() {
-	if(this.analyser) {
-		this.frequencies = this.analyser.getFrequencies();
-	} else {
-		return;
-	}
-
-	var f = this.analyser.getFrequencies();
-
-	var sum = 0;
-
-	for(var i=0; i<f.length; i++) {
-		var index = i * 4;
-		sum += f[i];
-	}
-
-	sum /= f.length;
-	var threshold = 10;
-	var maxSpeed = 2.0;
-
-	if(sum > threshold) {
-		this.sum += sum * 1.5;
-		this.easeSum.value = Math.min(this.sum, maxSpeed) * .1;
-	} else {
-		this.easeSum.value = 0;
-	}
-
-	this.sum -= this.sum * .1;
-	if(this.sum < 0) this.sum = 0;
-};
 
 p.resize = function() {
 	var scale = 1.0;

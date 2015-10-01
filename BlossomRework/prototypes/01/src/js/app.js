@@ -8,7 +8,9 @@ window.params = {
 	numParticles:128*2,
 	windSpeed:.225,
 	noiseOffset:.02,
-	maxRadius:1000
+	maxRadius:1000,
+	focusLength:.5,
+	depthContrast:1.0
 };
 
 (function() {
@@ -53,6 +55,8 @@ window.params = {
 		this.gui.add(params, "windSpeed", 0, 1);
 		this.gui.add(params, "noiseOffset", 0.01, 0.05);
 		this.gui.add(params, "maxRadius", 500.0, 1500.0);
+		this.gui.add(params, "focusLength", 0.0, 1.0);
+		this.gui.add(params, "depthContrast", 1.0, 5.0);
 	};
 
 	p._loop = function() {
