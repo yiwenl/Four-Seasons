@@ -17,6 +17,7 @@ uniform float maxRadius;
 
 
 varying vec2 vTextureCoord;
+varying vec2 vUVOffset;
 varying vec3 vColor;
 varying vec3 vNormal;
 varying float vOpacity;
@@ -46,10 +47,12 @@ vec3 rotate_vertex_position(vec3 pos, vec3 axis, float angle) {
 void main(void) {
 	vec3 pos = aVertexPosition;
 	vec2 uv = aUVOffset * .5;
+	vec2 uvUVOffset = uv + vec2(.5, .0);
 	vec2 uvExtra = uv + vec2(.0, .5);
 	vec3 rotation = normalize(texture2D(textureExtra, uv).rgb);
+	vUVOffset = texture2D(textureExtra, uvUVOffset).rg;
 	vec3 extras = texture2D(textureExtra, uvExtra).rgb;
-	pos *= extras.z * 3.0 + 2.0;
+	pos *= extras.z * 7.0 + 5.0;
 
 	float theta = time * mix(extras.g, 1.0, .5);
 	vec4 temp = vec4(1.0);

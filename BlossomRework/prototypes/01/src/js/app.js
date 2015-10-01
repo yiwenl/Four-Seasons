@@ -5,7 +5,7 @@ var dat = require("dat-gui");
 
 window.params = {
 	skipCount:3,
-	numParticles:128*2,
+	numParticles:128,
 	windSpeed:.225,
 	noiseOffset:.02,
 	maxRadius:1000,
@@ -33,6 +33,7 @@ window.params = {
 		var assets = [
 			"assets/detailHeight.png",
 			"assets/noise.png",
+			"assets/flower.png",
 			"assets/bg.jpg"
 		];
 
@@ -75,6 +76,7 @@ window.params = {
 		this.gui.add(params, "blur", 0.0, 5.0);
 		this.gui.add(params, "terrainNoiseHeight", 0.0, 100.0);
 		this.gui.addColor(params, "lightColor");
+		this.gui.add(params, "enablePostEffect");
 	};
 
 	p._loop = function() {

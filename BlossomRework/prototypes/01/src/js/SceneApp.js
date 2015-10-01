@@ -40,29 +40,28 @@ var p = SceneApp.prototype = new bongiovi.Scene();
 
 p._initTextures = function() {
 	if(!gl) gl = GL.gl;
-	this._textureSky         = new bongiovi.GLTexture(images.bg);
-	this._textureNoise       = new bongiovi.GLTexture(images.noise);
-	this._textureDetailHeight       = new bongiovi.GLTexture(images.detailHeight);
+	this._textureSky          = new bongiovi.GLTexture(images.bg);
+	this._textureNoise        = new bongiovi.GLTexture(images.noise);
+	this._textureDetailHeight = new bongiovi.GLTexture(images.detailHeight);
+	this._textureFlower       = new bongiovi.GLTexture(images.flower);
 	
-	var num                  = params.numParticles;
-	var o                    = { minFilter:gl.NEAREST,magFilter:gl.NEAREST}
-	this._fboCurrent         = new bongiovi.FrameBuffer(num*2, num*2, o);
-	this._fboTarget          = new bongiovi.FrameBuffer(num*2, num*2, o);
-	this._fboExtras          = new bongiovi.FrameBuffer(num*2, num*2, o);
+	var num                   = params.numParticles;
+	var o                     = { minFilter:gl.NEAREST,magFilter:gl.NEAREST}
+	this._fboCurrent          = new bongiovi.FrameBuffer(num*2, num*2, o);
+	this._fboTarget           = new bongiovi.FrameBuffer(num*2, num*2, o);
+	this._fboExtras           = new bongiovi.FrameBuffer(num*2, num*2, o);
 	
-	this._fboRender          = new bongiovi.FrameBuffer(GL.width, GL.height, o);
-	var blurSize             = 256*2;
-	this._fboVBlur           = new bongiovi.FrameBuffer(blurSize, blurSize);
-	this._fboFinalBlur       = new bongiovi.FrameBuffer(blurSize, blurSize);
-
+	this._fboRender           = new bongiovi.FrameBuffer(GL.width, GL.height, o);
+	var blurSize              = 256*2;
+	this._fboVBlur            = new bongiovi.FrameBuffer(blurSize, blurSize);
+	this._fboFinalBlur        = new bongiovi.FrameBuffer(blurSize, blurSize);
+	
 	var noiseSize             = 512;
 	this._fboNoise            = new bongiovi.FrameBuffer(noiseSize, noiseSize);
 	this._fboNormal           = new bongiovi.FrameBuffer(noiseSize, noiseSize);
 };
 
 p._initViews = function() {
-	this._vAxis      = new bongiovi.ViewAxis();
-	this._vDotPlane  = new bongiovi.ViewDotPlane();
 	this._vSave      = new ViewSave();
 	this._vSaveExtra = new ViewSaveExtra();
 	this._vCopy      = new bongiovi.ViewCopy();
@@ -73,8 +72,8 @@ p._initViews = function() {
 	this._vVBlur     = new ViewBlur(true);
 	this._vHBlur     = new ViewBlur(false);
 	this._vPost      = new ViewPost();
-	this._vNoise       = new ViewNoise(params.noise);
-	this._vNormal      = new ViewNormal(params.terrainNoiseHeight/300*3.0);
+	this._vNoise     = new ViewNoise(params.noise);
+	this._vNormal    = new ViewNormal(params.terrainNoiseHeight/300*3.0);
 
 
 	GL.setMatrices(this.cameraOtho);
@@ -145,7 +144,7 @@ p.render = function() {
 	GL.clear(0, 0, 0, 0);
 	// this._vAxis.render();
 	this._vSky.render(this._textureSky);
-	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera);
+	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera, this._textureFlower);
 	var numTiles = 2;
 	var size = 300;
 	for(var j=0; j<numTiles; j++) {

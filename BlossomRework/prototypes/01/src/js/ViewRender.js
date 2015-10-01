@@ -99,7 +99,7 @@ p._init = function() {
 	this.mesh.bufferData(normals, "aNormal", 3);
 };
 
-p.render = function(texture, textureNext, percent, textureExtra, camera) {
+p.render = function(texture, textureNext, percent, textureExtra, camera, textureFlower) {
 
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
@@ -108,6 +108,8 @@ p.render = function(texture, textureNext, percent, textureExtra, camera) {
 	textureNext.bind(1);
 	this.shader.uniform("textureExtra", "uniform1i", 2);
 	textureExtra.bind(2);
+	this.shader.uniform("textureFlower", "uniform1i", 3);
+	textureFlower.bind(3);
 	this.shader.uniform("percent", "uniform1f", percent);
 	this.shader.uniform("time", "uniform1f", this.time);
 	this.shader.uniform("zNear", "uniform1f", camera.near);

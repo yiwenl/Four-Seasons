@@ -27,6 +27,19 @@ p._init = function() {
 	var ux, uy;
 	var range = 100.0;
 
+	function getUVoffset() {
+		var r = Math.random();
+		if(r < .25) {
+			return [0, 0, 0];
+		} else if(r < .5) {
+			return [.5, 0, 0];
+		} else if(r < .75) {
+			return [0, .5, 0];
+		} else {
+			return [.5, .5, 0];
+		}
+	}
+
 
 	for(var j=0; j<numParticles; j++) {
 		for(var i=0; i<numParticles; i++) {
@@ -43,7 +56,7 @@ p._init = function() {
 			count ++;
 
 			//	UV OFFSET
-			positions.push([0.0, 0.0, 0.0]);
+			positions.push(getUVoffset());
 			coords.push([ux+1.0, uy]);
 			indices.push(count);
 			count ++;

@@ -4461,29 +4461,28 @@ var p = SceneApp.prototype = new bongiovi.Scene();
 
 p._initTextures = function() {
 	if(!gl) gl = GL.gl;
-	this._textureSky         = new bongiovi.GLTexture(images.bg);
-	this._textureNoise       = new bongiovi.GLTexture(images.noise);
-	this._textureDetailHeight       = new bongiovi.GLTexture(images.detailHeight);
+	this._textureSky          = new bongiovi.GLTexture(images.bg);
+	this._textureNoise        = new bongiovi.GLTexture(images.noise);
+	this._textureDetailHeight = new bongiovi.GLTexture(images.detailHeight);
+	this._textureFlower       = new bongiovi.GLTexture(images.flower);
 	
-	var num                  = params.numParticles;
-	var o                    = { minFilter:gl.NEAREST,magFilter:gl.NEAREST}
-	this._fboCurrent         = new bongiovi.FrameBuffer(num*2, num*2, o);
-	this._fboTarget          = new bongiovi.FrameBuffer(num*2, num*2, o);
-	this._fboExtras          = new bongiovi.FrameBuffer(num*2, num*2, o);
+	var num                   = params.numParticles;
+	var o                     = { minFilter:gl.NEAREST,magFilter:gl.NEAREST}
+	this._fboCurrent          = new bongiovi.FrameBuffer(num*2, num*2, o);
+	this._fboTarget           = new bongiovi.FrameBuffer(num*2, num*2, o);
+	this._fboExtras           = new bongiovi.FrameBuffer(num*2, num*2, o);
 	
-	this._fboRender          = new bongiovi.FrameBuffer(GL.width, GL.height, o);
-	var blurSize             = 256*2;
-	this._fboVBlur           = new bongiovi.FrameBuffer(blurSize, blurSize);
-	this._fboFinalBlur       = new bongiovi.FrameBuffer(blurSize, blurSize);
-
+	this._fboRender           = new bongiovi.FrameBuffer(GL.width, GL.height, o);
+	var blurSize              = 256*2;
+	this._fboVBlur            = new bongiovi.FrameBuffer(blurSize, blurSize);
+	this._fboFinalBlur        = new bongiovi.FrameBuffer(blurSize, blurSize);
+	
 	var noiseSize             = 512;
 	this._fboNoise            = new bongiovi.FrameBuffer(noiseSize, noiseSize);
 	this._fboNormal           = new bongiovi.FrameBuffer(noiseSize, noiseSize);
 };
 
 p._initViews = function() {
-	this._vAxis      = new bongiovi.ViewAxis();
-	this._vDotPlane  = new bongiovi.ViewDotPlane();
 	this._vSave      = new ViewSave();
 	this._vSaveExtra = new ViewSaveExtra();
 	this._vCopy      = new bongiovi.ViewCopy();
@@ -4494,8 +4493,8 @@ p._initViews = function() {
 	this._vVBlur     = new ViewBlur(true);
 	this._vHBlur     = new ViewBlur(false);
 	this._vPost      = new ViewPost();
-	this._vNoise       = new ViewNoise(params.noise);
-	this._vNormal      = new ViewNormal(params.terrainNoiseHeight/300*3.0);
+	this._vNoise     = new ViewNoise(params.noise);
+	this._vNormal    = new ViewNormal(params.terrainNoiseHeight/300*3.0);
 
 
 	GL.setMatrices(this.cameraOtho);
@@ -4566,7 +4565,7 @@ p.render = function() {
 	GL.clear(0, 0, 0, 0);
 	// this._vAxis.render();
 	this._vSky.render(this._textureSky);
-	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera);
+	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera, this._textureFlower);
 	var numTiles = 2;
 	var size = 300;
 	for(var j=0; j<numTiles; j++) {
@@ -4851,7 +4850,7 @@ var gl;
 
 function ViewRender() {
 	this.time = Math.random() * 0xFF;
-	bongiovi.View.call(this, "#define GLSLIFY 1\n// line.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\nattribute vec2 aUVOffset;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\nuniform float percent;\nuniform float time;\nuniform float maxRadius;\n\n\nvarying vec2 vTextureCoord;\nvarying vec3 vColor;\nvarying vec3 vNormal;\nvarying float vOpacity;\nvarying float vDepth;\n\nconst vec3 AXIS_X = vec3(1.0, 0.0, 0.0);\nconst vec3 AXIS_Y = vec3(0.0, 1.0, 0.0);\nconst vec3 AXIS_Z = vec3(0.0, 0.0, 1.0);\n\n\nvec4 quat_from_axis_angle(vec3 axis, float angle) { \n\tvec4 qr;\n\tfloat half_angle = (angle * 0.5);\n\tqr.x = axis.x * sin(half_angle);\n\tqr.y = axis.y * sin(half_angle);\n\tqr.z = axis.z * sin(half_angle);\n\tqr.w = cos(half_angle);\n\treturn qr;\n}\n\nvec3 rotate_vertex_position(vec3 pos, vec3 axis, float angle) { \n\tvec4 q = quat_from_axis_angle(axis, angle);\n\tvec3 v = pos.xyz;\n\treturn v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);\n}\n\nvoid main(void) {\n\tvec3 pos = aVertexPosition;\n\tvec2 uv = aUVOffset * .5;\n\tvec2 uvExtra = uv + vec2(.0, .5);\n\tvec3 rotation = normalize(texture2D(textureExtra, uv).rgb);\n\tvec3 extras = texture2D(textureExtra, uvExtra).rgb;\n\tpos *= extras.z * 3.0 + 2.0;\n\n\tfloat theta = time * mix(extras.g, 1.0, .5);\n\tvec4 temp = vec4(1.0);\n\ttemp.rgb = rotate_vertex_position(pos, rotation, theta );\n\n\tvec3 posCurrent = texture2D(texture, uv).rgb;\n\tvec3 posNext = texture2D(textureNext, uv).rgb;\n\tif(length(posNext) - length(posCurrent) < -(maxRadius*.5)) posNext = normalize(posCurrent) * maxRadius;\n\telse vOpacity = 1.0;\n\n\ttemp.xyz += mix(posCurrent, posNext, percent);\n\ttemp.xyz *= .1;\n\n\n\tvec4 V = uPMatrix * (uMVMatrix * temp);;\n    gl_Position = V;\n    vDepth = V.z / V.w;\n    vTextureCoord = aTextureCoord;\n\n    gl_PointSize = 1.0;\n    vColor = vec3(1.0);\n\n    vNormal = rotate_vertex_position(aNormal, rotation, theta );\n}", "#define GLSLIFY 1\nprecision mediump float;\n\nvarying vec3 vColor;\nvarying vec3 vNormal;\n\nconst float ambient_color = .35; \nconst vec3 ambient = vec3(ambient_color);\nconst float lightWeight = 1.0 - ambient_color;\n\n\nvarying float vOpacity;\nvarying float vDepth;\n\nuniform float zFar;\nuniform float zNear;\nuniform vec3 lightColor;\nuniform vec3 lightDir;\n\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\nvoid main(void) {\n    gl_FragColor = vec4(vColor, vOpacity);\n\n    float lambert = max(dot(vNormal, normalize(lightDir)), 0.0);\n    float D = 1.0-getDepth(vDepth, zNear, zFar);\n\n    gl_FragColor.rgb = ambient + lightColor/255.0 * lambert * lightWeight;\n}");
+	bongiovi.View.call(this, "#define GLSLIFY 1\n// line.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\nattribute vec2 aUVOffset;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\nuniform float percent;\nuniform float time;\nuniform float maxRadius;\n\n\nvarying vec2 vTextureCoord;\nvarying vec2 vUVOffset;\nvarying vec3 vColor;\nvarying vec3 vNormal;\nvarying float vOpacity;\nvarying float vDepth;\n\nconst vec3 AXIS_X = vec3(1.0, 0.0, 0.0);\nconst vec3 AXIS_Y = vec3(0.0, 1.0, 0.0);\nconst vec3 AXIS_Z = vec3(0.0, 0.0, 1.0);\n\n\nvec4 quat_from_axis_angle(vec3 axis, float angle) { \n\tvec4 qr;\n\tfloat half_angle = (angle * 0.5);\n\tqr.x = axis.x * sin(half_angle);\n\tqr.y = axis.y * sin(half_angle);\n\tqr.z = axis.z * sin(half_angle);\n\tqr.w = cos(half_angle);\n\treturn qr;\n}\n\nvec3 rotate_vertex_position(vec3 pos, vec3 axis, float angle) { \n\tvec4 q = quat_from_axis_angle(axis, angle);\n\tvec3 v = pos.xyz;\n\treturn v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);\n}\n\nvoid main(void) {\n\tvec3 pos = aVertexPosition;\n\tvec2 uv = aUVOffset * .5;\n\tvec2 uvUVOffset = uv + vec2(.5, .0);\n\tvec2 uvExtra = uv + vec2(.0, .5);\n\tvec3 rotation = normalize(texture2D(textureExtra, uv).rgb);\n\tvUVOffset = texture2D(textureExtra, uvUVOffset).rg;\n\tvec3 extras = texture2D(textureExtra, uvExtra).rgb;\n\tpos *= extras.z * 7.0 + 5.0;\n\n\tfloat theta = time * mix(extras.g, 1.0, .5);\n\tvec4 temp = vec4(1.0);\n\ttemp.rgb = rotate_vertex_position(pos, rotation, theta );\n\n\tvec3 posCurrent = texture2D(texture, uv).rgb;\n\tvec3 posNext = texture2D(textureNext, uv).rgb;\n\tif(length(posNext) - length(posCurrent) < -(maxRadius*.5)) posNext = normalize(posCurrent) * maxRadius;\n\telse vOpacity = 1.0;\n\n\ttemp.xyz += mix(posCurrent, posNext, percent);\n\ttemp.xyz *= .1;\n\n\n\tvec4 V = uPMatrix * (uMVMatrix * temp);;\n    gl_Position = V;\n    vDepth = V.z / V.w;\n    vTextureCoord = aTextureCoord;\n\n    gl_PointSize = 1.0;\n    vColor = vec3(1.0);\n\n    vNormal = rotate_vertex_position(aNormal, rotation, theta );\n}", "#define GLSLIFY 1\nprecision mediump float;\n\nvarying vec3 vColor;\nvarying vec3 vNormal;\n\nconst float ambient_color = .65; \nconst vec3 ambient = vec3(ambient_color);\nconst float lightWeight = .5;\n\n\nvarying float vOpacity;\nvarying float vDepth;\nvarying vec2 vTextureCoord;\nvarying vec2 vUVOffset;\n\nuniform float zFar;\nuniform float zNear;\nuniform vec3 lightColor;\nuniform vec3 lightDir;\nuniform sampler2D textureFlower;\n\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\nvoid main(void) {\n    gl_FragColor = texture2D(textureFlower, vTextureCoord * .5 + vUVOffset);\n    gl_FragColor.a *= vOpacity;\n    if(gl_FragColor.a < .1) discard;\n\n    float lambert = max(dot(vNormal, normalize(lightDir)), 0.0);\n    float D = 1.0-getDepth(vDepth, zNear, zFar);\n\n    gl_FragColor.rgb *= ambient + lightColor/255.0 * lambert * lightWeight;\n}");
 }
 
 var p = ViewRender.prototype = new bongiovi.View();
@@ -4945,7 +4944,7 @@ p._init = function() {
 	this.mesh.bufferData(normals, "aNormal", 3);
 };
 
-p.render = function(texture, textureNext, percent, textureExtra, camera) {
+p.render = function(texture, textureNext, percent, textureExtra, camera, textureFlower) {
 
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
@@ -4954,6 +4953,8 @@ p.render = function(texture, textureNext, percent, textureExtra, camera) {
 	textureNext.bind(1);
 	this.shader.uniform("textureExtra", "uniform1i", 2);
 	textureExtra.bind(2);
+	this.shader.uniform("textureFlower", "uniform1i", 3);
+	textureFlower.bind(3);
 	this.shader.uniform("percent", "uniform1f", percent);
 	this.shader.uniform("time", "uniform1f", this.time);
 	this.shader.uniform("zNear", "uniform1f", camera.near);
@@ -5068,6 +5069,19 @@ p._init = function() {
 	var ux, uy;
 	var range = 100.0;
 
+	function getUVoffset() {
+		var r = Math.random();
+		if(r < .25) {
+			return [0, 0, 0];
+		} else if(r < .5) {
+			return [.5, 0, 0];
+		} else if(r < .75) {
+			return [0, .5, 0];
+		} else {
+			return [.5, .5, 0];
+		}
+	}
+
 
 	for(var j=0; j<numParticles; j++) {
 		for(var i=0; i<numParticles; i++) {
@@ -5084,7 +5098,7 @@ p._init = function() {
 			count ++;
 
 			//	UV OFFSET
-			positions.push([0.0, 0.0, 0.0]);
+			positions.push(getUVoffset());
 			coords.push([ux+1.0, uy]);
 			indices.push(count);
 			count ++;
@@ -5320,7 +5334,7 @@ var dat = require("dat-gui");
 
 window.params = {
 	skipCount:3,
-	numParticles:128*2,
+	numParticles:128,
 	windSpeed:.225,
 	noiseOffset:.02,
 	maxRadius:1000,
@@ -5348,6 +5362,7 @@ window.params = {
 		var assets = [
 			"assets/detailHeight.png",
 			"assets/noise.png",
+			"assets/flower.png",
 			"assets/bg.jpg"
 		];
 
@@ -5390,6 +5405,7 @@ window.params = {
 		this.gui.add(params, "blur", 0.0, 5.0);
 		this.gui.add(params, "terrainNoiseHeight", 0.0, 100.0);
 		this.gui.addColor(params, "lightColor");
+		this.gui.add(params, "enablePostEffect");
 	};
 
 	p._loop = function() {
