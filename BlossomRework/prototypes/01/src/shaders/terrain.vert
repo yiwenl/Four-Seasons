@@ -21,7 +21,7 @@ vec3 getPosition(vec2 uv) {
 	pos.x = -size/2.0 + uv.x * size;
 	pos.z = size/2.0 - uv.y * size;
 
-	float h = texture2D(texture, uv).r * height-height*.5;
+	float h = texture2D(texture, uv).r * height;
 	pos.y += h;
 
 	return pos;

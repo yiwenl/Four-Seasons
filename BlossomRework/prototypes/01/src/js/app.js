@@ -12,9 +12,14 @@ window.params = {
 	focusLength:.975,
 	depthContrast:1.0,
 	blur:1.0,
-	terrainNoiseHeight:50.0,
+	terrainNoiseHeight:35.0,
 	lightPos:[1.0, 1.0, 1.0],
 	lightColor:[255.0, 255.0, 255.0],
+	noise:.3,
+	noiseScale:.25,
+	detailMapScale:3.4,
+	detailMapHeight:.05,
+	bump:.3,
 	enablePostEffect:false
 
 };
@@ -26,8 +31,7 @@ window.params = {
 
 		var loader = new bongiovi.SimpleImageLoader();
 		var assets = [
-			"assets/noiseHeight.jpg",
-			"assets/noiseNormal.jpg",
+			"assets/detailHeight.png",
 			"assets/noise.png",
 			"assets/bg.jpg"
 		];
