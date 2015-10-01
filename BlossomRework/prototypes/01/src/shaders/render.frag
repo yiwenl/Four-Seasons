@@ -3,15 +3,18 @@ precision mediump float;
 varying vec3 vColor;
 varying vec3 vNormal;
 
-const vec3 ambient = vec3(.1);
-const vec3 lightDir = vec3(1.0);
-const vec3 lightColor = vec3(1.0);
-const float lightWeight = .9;
+const float ambient_color = .35; 
+const vec3 ambient = vec3(ambient_color);
+const float lightWeight = 1.0 - ambient_color;
+
+
 varying float vOpacity;
 varying float vDepth;
 
 uniform float zFar;
 uniform float zNear;
+uniform vec3 lightColor;
+uniform vec3 lightDir;
 
 
 float getDepth(float z, float n, float f) {
@@ -24,10 +27,5 @@ void main(void) {
     float lambert = max(dot(vNormal, normalize(lightDir)), 0.0);
     float D = 1.0-getDepth(vDepth, zNear, zFar);
 
-    gl_FragColor.rgb = ambient + lightColor * lambert * lightWeight;
-    // gl_FragColor.rgb *= D;
-    // gl_FragColor.rgb = vec3(D);
-
-
-    // gl_FragColor.rgb = (vNormal + 1.0) * .5;
+    gl_FragColor.rgb = ambient + lightColor/255.0 * lambert * lightWeight;
 }

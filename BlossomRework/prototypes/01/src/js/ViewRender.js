@@ -113,6 +113,8 @@ p.render = function(texture, textureNext, percent, textureExtra, camera) {
 	this.shader.uniform("zNear", "uniform1f", camera.near);
 	this.shader.uniform("zFar", "uniform1f", camera.far);
 	this.shader.uniform("maxRadius", "uniform1f", params.maxRadius);
+	this.shader.uniform("lightDir", "uniform3fv", params.lightPos);
+	this.shader.uniform("lightColor", "uniform3fv", params.lightColor);
 
 	this.time += .05;
 

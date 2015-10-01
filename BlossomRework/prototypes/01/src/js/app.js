@@ -11,7 +11,12 @@ window.params = {
 	maxRadius:1000,
 	focusLength:.975,
 	depthContrast:1.0,
-	blur:1.0
+	blur:1.0,
+	terrainNoiseHeight:50.0,
+	lightPos:[1.0, 1.0, 1.0],
+	lightColor:[255.0, 255.0, 255.0],
+	enablePostEffect:false
+
 };
 
 (function() {
@@ -20,7 +25,12 @@ window.params = {
 	App = function() {
 
 		var loader = new bongiovi.SimpleImageLoader();
-		var assets = ["assets/bg.jpg"];
+		var assets = [
+			"assets/noiseHeight.jpg",
+			"assets/noiseNormal.jpg",
+			"assets/noise.png",
+			"assets/bg.jpg"
+		];
 
 		loader.load(assets, this, this._onImageLoaded, this._onImageProgress)
 	}
@@ -59,6 +69,8 @@ window.params = {
 		this.gui.add(params, "focusLength", 0.9, 1.0);
 		this.gui.add(params, "depthContrast", 1.0, 5.0);
 		this.gui.add(params, "blur", 0.0, 5.0);
+		this.gui.add(params, "terrainNoiseHeight", 0.0, 100.0);
+		this.gui.addColor(params, "lightColor");
 	};
 
 	p._loop = function() {

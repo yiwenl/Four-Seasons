@@ -9,6 +9,7 @@ var ViewSimulation = require("./ViewSimulation");
 var ViewSky = require("./ViewSky");
 var ViewBlur = require("./ViewBlur");
 var ViewPost = require("./ViewPost");
+var ViewTerrain = require("./ViewTerrain");
 
 function SceneApp() {
 	gl = GL.gl;
@@ -36,27 +37,25 @@ function SceneApp() {
 var p = SceneApp.prototype = new bongiovi.Scene();
 
 p._initTextures = function() {
-	console.log('Init Textures');
 	if(!gl) gl = GL.gl;
-	this._textureSky = new bongiovi.GLTexture(images.bg);
-
-	var num = params.numParticles;
-	var o = {
-		minFilter:gl.NEAREST,
-		magFilter:gl.NEAREST
-	}
-	this._fboCurrent 	= new bongiovi.FrameBuffer(num*2, num*2, o);
-	this._fboTarget 	= new bongiovi.FrameBuffer(num*2, num*2, o);
-	this._fboExtras 	= new bongiovi.FrameBuffer(num*2, num*2, o);
-
-	this._fboRender 	= new bongiovi.FrameBuffer(GL.width, GL.height, o);
-	var blurSize 		= 256*2;
-	this._fboVBlur 		= new bongiovi.FrameBuffer(blurSize, blurSize);
-	this._fboFinalBlur  = new bongiovi.FrameBuffer(blurSize, blurSize);
+	this._textureSky         = new bongiovi.GLTexture(images.bg);
+	this._textureNoiseHeight = new bongiovi.GLTexture(images.noiseHeight);
+	this._textureNoiseNormal = new bongiovi.GLTexture(images.noiseNormal);
+	this._textureNoise       = new bongiovi.GLTexture(images.noise);
+	
+	var num                  = params.numParticles;
+	var o                    = { minFilter:gl.NEAREST,magFilter:gl.NEAREST}
+	this._fboCurrent         = new bongiovi.FrameBuffer(num*2, num*2, o);
+	this._fboTarget          = new bongiovi.FrameBuffer(num*2, num*2, o);
+	this._fboExtras          = new bongiovi.FrameBuffer(num*2, num*2, o);
+	
+	this._fboRender          = new bongiovi.FrameBuffer(GL.width, GL.height, o);
+	var blurSize             = 256*2;
+	this._fboVBlur           = new bongiovi.FrameBuffer(blurSize, blurSize);
+	this._fboFinalBlur       = new bongiovi.FrameBuffer(blurSize, blurSize);
 };
 
 p._initViews = function() {
-	console.log('Init Views');
 	this._vAxis      = new bongiovi.ViewAxis();
 	this._vDotPlane  = new bongiovi.ViewDotPlane();
 	this._vSave      = new ViewSave();
@@ -64,10 +63,11 @@ p._initViews = function() {
 	this._vCopy      = new bongiovi.ViewCopy();
 	this._vRender    = new ViewRender();
 	this._vSim       = new ViewSimulation();
-	this._vSky 		   = new ViewSky();
+	this._vSky       = new ViewSky();
+	this._vTerrain   = new ViewTerrain();
 	this._vVBlur     = new ViewBlur(true);
 	this._vHBlur     = new ViewBlur(false);
-	this._vPost 	 = new ViewPost();
+	this._vPost      = new ViewPost();
 
 
 	GL.setMatrices(this.cameraOtho);
@@ -119,43 +119,55 @@ p.render = function() {
 	this.count ++;
 	GL.setViewport(0, 0, GL.width, GL.height);
 	
-	this._fboRender.bind();	
+	if(params.enablePostEffect) {
+		this._fboRender.bind();		
+	}
+	
 	GL.clear(0, 0, 0, 0);
 	this._vSky.render(this._textureSky);
 	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera);
-	this._fboRender.unbind();
+	var numTiles = 2;
+	var size = 300;
+	for(var j=0; j<numTiles; j++) {
+		for(var i=0; i<numTiles; i++) {
+			var uvOffset = [i/numTiles, j/numTiles];
+			this._vTerrain.render(this._textureNoiseHeight, numTiles, size, uvOffset, this._textureNoiseNormal, this._textureNoise);
+		}
+	}
 
-	GL.setMatrices(this.cameraOtho);
-	GL.rotate(this.rotationFront);
-	// this._vCopy.render(this._fboRender.getDepthTexture());
+	if(params.enablePostEffect) {
+		this._fboRender.unbind();
 
-	this._vVBlur.blur = this._vHBlur.blur = params.blur;
-	this._fboVBlur.bind();
-	GL.setViewport(0, 0, this._fboVBlur.width, this._fboVBlur.height);
-	GL.clear();
-	this._vVBlur.render(this._fboRender.getTexture());
-	this._fboVBlur.unbind();
+		GL.setMatrices(this.cameraOtho);
+		GL.rotate(this.rotationFront);
 
-	this._fboFinalBlur.bind();
-	GL.setViewport(0, 0, this._fboFinalBlur.width, this._fboFinalBlur.height);
-	GL.clear();
-	this._vHBlur.render(this._fboVBlur.getTexture());
-	this._fboFinalBlur.unbind();
+		this._vVBlur.blur = this._vHBlur.blur = params.blur;
+		this._fboVBlur.bind();
+		GL.setViewport(0, 0, this._fboVBlur.width, this._fboVBlur.height);
+		GL.clear();
+		this._vVBlur.render(this._fboRender.getTexture());
+		this._fboVBlur.unbind();
 
-	// GL.setViewport(0, 0, this._fboVBlur.width, this._fboVBlur.height);
+		this._fboFinalBlur.bind();
+		GL.setViewport(0, 0, this._fboFinalBlur.width, this._fboFinalBlur.height);
+		GL.clear();
+		this._vHBlur.render(this._fboVBlur.getTexture());
+		this._fboFinalBlur.unbind();
+		
+		var subscreenSize = window.innerHeight/3;
+		GL.setViewport(0, 0, subscreenSize*GL.aspectRatio, subscreenSize);
+		this._vCopy.render(this._fboRender.getTexture());
 
-	// var subscreenSize = Math.min(window.innerWidth, window.innerHeight) /2;
-	var subscreenSize = 256;
-	GL.setViewport(0, 0, subscreenSize, subscreenSize);
-	this._vCopy.render(this._fboRender.getTexture());
+		GL.setViewport(0, subscreenSize, subscreenSize*GL.aspectRatio, subscreenSize);
+		this._vCopy.render(this._fboFinalBlur.getTexture());
 
-	GL.setViewport(0, subscreenSize, subscreenSize, subscreenSize);
-	this._vCopy.render(this._fboFinalBlur.getTexture());
+		GL.setViewport(0, subscreenSize*2, subscreenSize*GL.aspectRatio, subscreenSize);
+		this._vCopy.render(this._fboRender.getDepthTexture());
 
+		GL.setViewport(0, 0, GL.width, GL.height);
+		this._vPost.render(this._fboRender.getTexture(), this._fboFinalBlur.getTexture(), this._fboRender.getDepthTexture(), this.camera);
+	}
 
-	// GL.setViewport(subscreenSize, 0, subscreenSize, subscreenSize);
-	GL.setViewport(0, 0, GL.width, GL.height);
-	this._vPost.render(this._fboRender.getTexture(), this._fboFinalBlur.getTexture(), this._fboRender.getDepthTexture(), this.camera);
 };
 
 
