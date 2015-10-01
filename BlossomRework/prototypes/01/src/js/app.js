@@ -6,7 +6,7 @@ var dat = require("dat-gui");
 window.params = {
 	skipCount:3,
 	numParticles:128*2,
-	windSpeed:.15,
+	windSpeed:.25,
 	noiseOffset:.02,
 	maxRadius:700
 };
