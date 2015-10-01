@@ -34,8 +34,9 @@ p._init = function() {
 			ux = i/numParticles-1.0 + .5/numParticles;
 			uy = j/numParticles-1.0 + .5/numParticles;
 
-			//	ROTATION + SIZE
-			var rotation = [Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2 ];
+			//	ROTATION
+			// var rotation = [1, 0, 0];
+			var rotation = [random(-1, 1), random(-1, 1), random(-1, 1)];
 			positions.push(rotation);
 			coords.push([ux, uy]);
 			indices.push(count);

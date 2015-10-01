@@ -4435,7 +4435,7 @@ function SceneApp() {
 	this.easeSum = new bongiovi.EaseNumber(0, .25);
 	this._initSound();
 	bongiovi.Scene.call(this);
-	this.camera.setPerspective(65 * Math.PI/180, GL.aspectRatio, 5, 200);
+	this.camera.setPerspective(85 * Math.PI/180, GL.aspectRatio, 5, 200);
 
 	window.addEventListener("resize", this.resize.bind(this));
 
@@ -4445,6 +4445,7 @@ function SceneApp() {
 	this.camera._rx.value = -.3;
 	this.camera._ry.value = -.1;
 	this.camera.radius.value = 100;
+	this.camera.center[1] = -30.0;
 
 	this.resize();
 }
@@ -4671,7 +4672,7 @@ var gl;
 
 function ViewRender() {
 	this.time = Math.random() * 0xFF;
-	bongiovi.View.call(this, "#define GLSLIFY 1\n// line.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\nattribute vec2 aUVOffset;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\nuniform float percent;\nuniform float time;\nuniform float maxRadius;\n\n\nvarying vec2 vTextureCoord;\nvarying vec3 vColor;\nvarying vec3 vNormal;\nvarying float vOpacity;\nvarying float vDepth;\n\nconst vec3 AXIS_X = vec3(1.0, 0.0, 0.0);\nconst vec3 AXIS_Y = vec3(0.0, 1.0, 0.0);\nconst vec3 AXIS_Z = vec3(0.0, 0.0, 1.0);\n\nmat4 rotationMatrix(vec3 axis, float angle) {\n    axis = normalize(axis);\n    float s = sin(angle);\n    float c = cos(angle);\n    float oc = 1.0 - c;\n    \n    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,\n                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,\n                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,\n                0.0,                                0.0,                                0.0,                                1.0);\n}\n\n\nvoid main(void) {\n\tvec3 pos = aVertexPosition;\n\tvec2 uv = aUVOffset * .5;\n\tvec2 uvExtra = uv + vec2(.0, .5);\n\tvec3 rotation = texture2D(textureExtra, uv).rgb;\n\tvec3 extras = texture2D(textureExtra, uvExtra).rgb;\n\tpos *= extras.z * 3.0 + 2.0;\n\n\tmat4 rotX = rotationMatrix(AXIS_X, rotation.r + time * mix(extras.r, 1.0, .5));\n\tmat4 rotY = rotationMatrix(AXIS_Y, rotation.g + time * mix(extras.g, 1.0, .5));\n\tmat4 rotZ = rotationMatrix(AXIS_Z, rotation.b + time * mix(extras.g, 1.0, .5));\n\n\tvec4 temp = rotX * rotY * rotZ * vec4(pos, 1.0);\n\n\tvec3 posCurrent = texture2D(texture, uv).rgb;\n\tvec3 posNext = texture2D(textureNext, uv).rgb;\n\tif(length(posNext) - length(posCurrent) < -(maxRadius*.5)) posNext = normalize(posCurrent) * maxRadius;\n\telse vOpacity = 1.0;\n\n\ttemp.xyz += mix(posCurrent, posNext, percent);\n\ttemp.xyz *= .1;\n\n\n\tvec4 V = uPMatrix * (uMVMatrix * temp);;\n    gl_Position = V;\n    vDepth = V.z / V.w;\n    vTextureCoord = aTextureCoord;\n\n    gl_PointSize = 1.0;\n    vColor = vec3(1.0);\n\n\n    vNormal = (rotX * rotY * rotZ * (vec4(aNormal, 1.0))).rgb;\n}", "#define GLSLIFY 1\nprecision mediump float;\n\nvarying vec3 vColor;\nvarying vec3 vNormal;\n\nconst vec3 ambient = vec3(.1);\nconst vec3 lightDir = vec3(1.0);\nconst vec3 lightColor = vec3(1.0);\nconst float lightWeight = .9;\nvarying float vOpacity;\nvarying float vDepth;\n\nuniform float zFar;\nuniform float zNear;\n\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\nvoid main(void) {\n    gl_FragColor = vec4(vColor, vOpacity);\n\n    float lambert = max(dot(vNormal, normalize(lightDir)), 0.0);\n    float D = 1.0-getDepth(vDepth, zNear, zFar);\n\n    gl_FragColor.rgb = ambient + lightColor * lambert * lightWeight;\n    // gl_FragColor.rgb *= D;\n    gl_FragColor.rgb = vec3(D);\n\n\n    // gl_FragColor.rgb = (vNormal + 1.0) * .5;\n}");
+	bongiovi.View.call(this, "#define GLSLIFY 1\n// line.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\nattribute vec2 aUVOffset;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\nuniform float percent;\nuniform float time;\nuniform float maxRadius;\n\n\nvarying vec2 vTextureCoord;\nvarying vec3 vColor;\nvarying vec3 vNormal;\nvarying float vOpacity;\nvarying float vDepth;\n\nconst vec3 AXIS_X = vec3(1.0, 0.0, 0.0);\nconst vec3 AXIS_Y = vec3(0.0, 1.0, 0.0);\nconst vec3 AXIS_Z = vec3(0.0, 0.0, 1.0);\n\nmat4 rotationMatrix(vec3 axis, float angle) {\n    axis = normalize(axis);\n    float s = sin(angle);\n    float c = cos(angle);\n    float oc = 1.0 - c;\n    \n    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,\n                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,\n                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,\n                0.0,                                0.0,                                0.0,                                1.0);\n}\n\n\n\nvec4 quat_from_axis_angle(vec3 axis, float angle) { \n\tvec4 qr;\n\tfloat half_angle = (angle * 0.5);\n\tqr.x = axis.x * sin(half_angle);\n\tqr.y = axis.y * sin(half_angle);\n\tqr.z = axis.z * sin(half_angle);\n\tqr.w = cos(half_angle);\n\treturn qr;\n}\n\nvec3 rotate_vertex_position(vec3 pos, vec3 axis, float angle) { \n\tvec4 q = quat_from_axis_angle(axis, angle);\n\tvec3 v = pos.xyz;\n\treturn v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);\n}\n\nvoid main(void) {\n\tvec3 pos = aVertexPosition;\n\tvec2 uv = aUVOffset * .5;\n\tvec2 uvExtra = uv + vec2(.0, .5);\n\tvec3 rotation = normalize(texture2D(textureExtra, uv).rgb);\n\tvec3 extras = texture2D(textureExtra, uvExtra).rgb;\n\tpos *= extras.z * 3.0 + 2.0;\n\n\n\t// mat4 rotX = rotationMatrix(AXIS_X, rotation.r + time * mix(extras.r, 1.0, .5));\n\t// mat4 rotY = rotationMatrix(AXIS_Y, rotation.g + time * mix(extras.g, 1.0, .5));\n\t// mat4 rotZ = rotationMatrix(AXIS_Z, rotation.b + time * mix(extras.g, 1.0, .5));\n\n\t// vec4 temp = rotX * rotY * rotZ * vec4(pos, 1.0);\n\tfloat theta = time * mix(extras.g, 1.0, .5);\n\tvec4 temp = vec4(1.0);\n\ttemp.rgb = rotate_vertex_position(pos, rotation, theta );\n\n\tvec3 posCurrent = texture2D(texture, uv).rgb;\n\tvec3 posNext = texture2D(textureNext, uv).rgb;\n\tif(length(posNext) - length(posCurrent) < -(maxRadius*.5)) posNext = normalize(posCurrent) * maxRadius;\n\telse vOpacity = 1.0;\n\n\ttemp.xyz += mix(posCurrent, posNext, percent);\n\ttemp.xyz *= .1;\n\n\n\tvec4 V = uPMatrix * (uMVMatrix * temp);;\n    gl_Position = V;\n    vDepth = V.z / V.w;\n    vTextureCoord = aTextureCoord;\n\n    gl_PointSize = 1.0;\n    vColor = vec3(1.0);\n\n\n    // vNormal = (rotX * rotY * rotZ * (vec4(aNormal, 1.0))).rgb;\n    vNormal = rotate_vertex_position(aNormal, rotation, theta );\n}", "#define GLSLIFY 1\nprecision mediump float;\n\nvarying vec3 vColor;\nvarying vec3 vNormal;\n\nconst vec3 ambient = vec3(.1);\nconst vec3 lightDir = vec3(1.0);\nconst vec3 lightColor = vec3(1.0);\nconst float lightWeight = .9;\nvarying float vOpacity;\nvarying float vDepth;\n\nuniform float zFar;\nuniform float zNear;\n\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\nvoid main(void) {\n    gl_FragColor = vec4(vColor, vOpacity);\n\n    float lambert = max(dot(vNormal, normalize(lightDir)), 0.0);\n    float D = 1.0-getDepth(vDepth, zNear, zFar);\n\n    gl_FragColor.rgb = ambient + lightColor * lambert * lightWeight;\n    // gl_FragColor.rgb *= D;\n    gl_FragColor.rgb = vec3(D);\n\n\n    // gl_FragColor.rgb = (vNormal + 1.0) * .5;\n}");
 }
 
 var p = ViewRender.prototype = new bongiovi.View();
@@ -4770,18 +4771,15 @@ p.render = function(texture, textureNext, percent, textureExtra, camera) {
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
 	texture.bind(0);
-
-	if(textureNext) {
-		this.shader.uniform("textureNext", "uniform1i", 1);
-		textureNext.bind(1);
-		this.shader.uniform("textureExtra", "uniform1i", 2);
-		textureExtra.bind(2);
-		this.shader.uniform("percent", "uniform1f", percent);
-		this.shader.uniform("time", "uniform1f", this.time);
-		this.shader.uniform("zNear", "uniform1f", camera.near);
-		this.shader.uniform("zFar", "uniform1f", camera.far);
-		this.shader.uniform("maxRadius", "uniform1f", params.maxRadius);
-	}
+	this.shader.uniform("textureNext", "uniform1i", 1);
+	textureNext.bind(1);
+	this.shader.uniform("textureExtra", "uniform1i", 2);
+	textureExtra.bind(2);
+	this.shader.uniform("percent", "uniform1f", percent);
+	this.shader.uniform("time", "uniform1f", this.time);
+	this.shader.uniform("zNear", "uniform1f", camera.near);
+	this.shader.uniform("zFar", "uniform1f", camera.far);
+	this.shader.uniform("maxRadius", "uniform1f", params.maxRadius);
 
 	this.time += .05;
 
@@ -4896,8 +4894,9 @@ p._init = function() {
 			ux = i/numParticles-1.0 + .5/numParticles;
 			uy = j/numParticles-1.0 + .5/numParticles;
 
-			//	ROTATION + SIZE
-			var rotation = [Math.random()*Math.PI*2, Math.random()*Math.PI*2, Math.random()*Math.PI*2 ];
+			//	ROTATION
+			// var rotation = [1, 0, 0];
+			var rotation = [random(-1, 1), random(-1, 1), random(-1, 1)];
 			positions.push(rotation);
 			coords.push([ux, uy]);
 			indices.push(count);
@@ -4980,9 +4979,9 @@ var dat = require("dat-gui");
 window.params = {
 	skipCount:3,
 	numParticles:128*2,
-	windSpeed:.25,
+	windSpeed:.225,
 	noiseOffset:.02,
-	maxRadius:700
+	maxRadius:1000
 };
 
 (function() {

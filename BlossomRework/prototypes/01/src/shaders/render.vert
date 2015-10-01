@@ -39,19 +39,40 @@ mat4 rotationMatrix(vec3 axis, float angle) {
 }
 
 
+
+vec4 quat_from_axis_angle(vec3 axis, float angle) { 
+	vec4 qr;
+	float half_angle = (angle * 0.5);
+	qr.x = axis.x * sin(half_angle);
+	qr.y = axis.y * sin(half_angle);
+	qr.z = axis.z * sin(half_angle);
+	qr.w = cos(half_angle);
+	return qr;
+}
+
+vec3 rotate_vertex_position(vec3 pos, vec3 axis, float angle) { 
+	vec4 q = quat_from_axis_angle(axis, angle);
+	vec3 v = pos.xyz;
+	return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
+}
+
 void main(void) {
 	vec3 pos = aVertexPosition;
 	vec2 uv = aUVOffset * .5;
 	vec2 uvExtra = uv + vec2(.0, .5);
-	vec3 rotation = texture2D(textureExtra, uv).rgb;
+	vec3 rotation = normalize(texture2D(textureExtra, uv).rgb);
 	vec3 extras = texture2D(textureExtra, uvExtra).rgb;
 	pos *= extras.z * 3.0 + 2.0;
 
-	mat4 rotX = rotationMatrix(AXIS_X, rotation.r + time * mix(extras.r, 1.0, .5));
-	mat4 rotY = rotationMatrix(AXIS_Y, rotation.g + time * mix(extras.g, 1.0, .5));
-	mat4 rotZ = rotationMatrix(AXIS_Z, rotation.b + time * mix(extras.g, 1.0, .5));
 
-	vec4 temp = rotX * rotY * rotZ * vec4(pos, 1.0);
+	// mat4 rotX = rotationMatrix(AXIS_X, rotation.r + time * mix(extras.r, 1.0, .5));
+	// mat4 rotY = rotationMatrix(AXIS_Y, rotation.g + time * mix(extras.g, 1.0, .5));
+	// mat4 rotZ = rotationMatrix(AXIS_Z, rotation.b + time * mix(extras.g, 1.0, .5));
+
+	// vec4 temp = rotX * rotY * rotZ * vec4(pos, 1.0);
+	float theta = time * mix(extras.g, 1.0, .5);
+	vec4 temp = vec4(1.0);
+	temp.rgb = rotate_vertex_position(pos, rotation, theta );
 
 	vec3 posCurrent = texture2D(texture, uv).rgb;
 	vec3 posNext = texture2D(textureNext, uv).rgb;
@@ -71,5 +92,6 @@ void main(void) {
     vColor = vec3(1.0);
 
 
-    vNormal = (rotX * rotY * rotZ * (vec4(aNormal, 1.0))).rgb;
+    // vNormal = (rotX * rotY * rotZ * (vec4(aNormal, 1.0))).rgb;
+    vNormal = rotate_vertex_position(aNormal, rotation, theta );
 }

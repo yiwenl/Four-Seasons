@@ -104,18 +104,15 @@ p.render = function(texture, textureNext, percent, textureExtra, camera) {
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
 	texture.bind(0);
-
-	if(textureNext) {
-		this.shader.uniform("textureNext", "uniform1i", 1);
-		textureNext.bind(1);
-		this.shader.uniform("textureExtra", "uniform1i", 2);
-		textureExtra.bind(2);
-		this.shader.uniform("percent", "uniform1f", percent);
-		this.shader.uniform("time", "uniform1f", this.time);
-		this.shader.uniform("zNear", "uniform1f", camera.near);
-		this.shader.uniform("zFar", "uniform1f", camera.far);
-		this.shader.uniform("maxRadius", "uniform1f", params.maxRadius);
-	}
+	this.shader.uniform("textureNext", "uniform1i", 1);
+	textureNext.bind(1);
+	this.shader.uniform("textureExtra", "uniform1i", 2);
+	textureExtra.bind(2);
+	this.shader.uniform("percent", "uniform1f", percent);
+	this.shader.uniform("time", "uniform1f", this.time);
+	this.shader.uniform("zNear", "uniform1f", camera.near);
+	this.shader.uniform("zFar", "uniform1f", camera.far);
+	this.shader.uniform("maxRadius", "uniform1f", params.maxRadius);
 
 	this.time += .05;
 

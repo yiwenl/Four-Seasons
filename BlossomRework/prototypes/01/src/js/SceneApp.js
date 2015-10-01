@@ -14,7 +14,7 @@ function SceneApp() {
 	this.easeSum = new bongiovi.EaseNumber(0, .25);
 	this._initSound();
 	bongiovi.Scene.call(this);
-	this.camera.setPerspective(65 * Math.PI/180, GL.aspectRatio, 5, 200);
+	this.camera.setPerspective(85 * Math.PI/180, GL.aspectRatio, 5, 200);
 
 	window.addEventListener("resize", this.resize.bind(this));
 
@@ -24,6 +24,7 @@ function SceneApp() {
 	this.camera._rx.value = -.3;
 	this.camera._ry.value = -.1;
 	this.camera.radius.value = 100;
+	this.camera.center[1] = -30.0;
 
 	this.resize();
 }
