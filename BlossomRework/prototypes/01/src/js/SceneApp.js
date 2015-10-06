@@ -19,7 +19,7 @@ function SceneApp() {
 	this.count = 0;
 	this.easeSum = new bongiovi.EaseNumber(0, .25);
 	bongiovi.Scene.call(this);
-	this.camera.setPerspective(75 * Math.PI/180, GL.aspectRatio, 5, 200);
+	this.camera.setPerspective(65 * Math.PI/180, GL.aspectRatio, 5, 200);
 
 	window.addEventListener("resize", this.resize.bind(this));
 

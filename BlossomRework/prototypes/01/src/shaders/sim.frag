@@ -104,15 +104,15 @@ void main(void) {
 			vec3 extras = texture2D(textureExtra, uvExtra).rgb;
 
 
-			float posOffset = noiseOffset * mix(extras.r , 1.0, .5);
-			float ax = snoise(pos.x*posOffset + time, pos.y*posOffset + time, pos.z*posOffset + time) + .25;
+			float posOffset = noiseOffset * mix(extras.r , 1.0, .35);
+			float ax = snoise(pos.x*posOffset + time, pos.y*posOffset + time, pos.z*posOffset + time) + .35;
 			float ay = snoise(pos.y*posOffset + time, pos.z*posOffset + time, pos.x*posOffset + time) + .2;
 			float az = snoise(pos.z*posOffset + time, pos.x*posOffset + time, pos.y*posOffset + time);
 
-			float windStrength = windSpeed * (mix(extras.g, 1.0, .25) + .01);
+			float windStrength = windSpeed * (mix(extras.g, 1.0, .15) + .01);
 			vel += vec3(ax, ay, az) * windStrength;
 
-			vel *= .98;
+			vel *= .95;
 
 			gl_FragColor = vec4(vel, 1.0);
 		}
