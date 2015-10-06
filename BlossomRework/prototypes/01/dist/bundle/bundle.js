@@ -4455,7 +4455,7 @@ function SceneApp() {
 	this.camera.lockRotation(false);
 	this.sceneRotation.lock(true);
 
-	this.camera._rx.value = -.3;
+	this.camera._rx.value = -.05;
 	this.camera._ry.value = -.1;
 	this.camera.radius.setTo(90);
 	this.camera.radius.value = 100;
@@ -5368,7 +5368,8 @@ window.params = {
 	detailMapScale:3.4,
 	detailMapHeight:.05,
 	bump:.3,
-	enablePostEffect:false
+	enablePostEffect:false,
+	showStats:true
 
 };
 
@@ -5425,9 +5426,16 @@ window.params = {
 		this.gui.add(params, "terrainNoiseHeight", 0.0, 100.0);
 		this.gui.addColor(params, "lightColor");
 		this.gui.add(params, "enablePostEffect");
+		this.gui.add(params, "showStats").onFinishChange(this._onStats.bind(this));
 
 		this.stats = new Stats();
 		document.body.appendChild(this.stats.domElement);
+		this.stats.domElement.classList.toggle('is-hidden', !params.showStats)
+	};
+
+	p._onStats = function() {
+		this.stats.domElement.classList.toggle('is-hidden', !params.showStats)
+		console.log(this.stats.domElement);
 	};
 
 	p._loop = function() {
