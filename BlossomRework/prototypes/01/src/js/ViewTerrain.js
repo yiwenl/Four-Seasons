@@ -59,7 +59,7 @@ p._init = function() {
 	this.mesh.bufferIndices(indices);
 };
 
-p.render = function(texture, numTiles, size, uvOffset, textureNormal, textureNoise) {
+p.render = function(texture, numTiles, size, uvOffset, textureNormal, textureNoise, camera) {
 	this.shader.bind();
 	
 	this.shader.uniform("size", "uniform1f", size);
@@ -75,6 +75,10 @@ p.render = function(texture, numTiles, size, uvOffset, textureNormal, textureNoi
 	textureNormal.bind(1);
 	this.shader.uniform("textureNoise", "uniform1i", 2);
 	textureNoise.bind(2);
+	if(camera) {
+		this.shader.uniform("near", "uniform1f", camera.near);
+		this.shader.uniform("far", "uniform1f", camera.far);
+	}
 	GL.draw(this.mesh);
 };
 

@@ -13,6 +13,8 @@ uniform sampler2D textureNext;
 uniform sampler2D textureExtra;
 uniform float percent;
 uniform float time;
+uniform float near;
+uniform float far;
 uniform float maxRadius;
 
 
@@ -44,6 +46,10 @@ vec3 rotate_vertex_position(vec3 pos, vec3 axis, float angle) {
 	return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
 }
 
+float getDepth(float z, float n, float f) {
+	return (2.0 * n) / (f + n - z*(f-n));
+}
+
 void main(void) {
 	vec3 pos = aVertexPosition;
 	vec2 uv = aUVOffset * .5;
@@ -69,7 +75,7 @@ void main(void) {
 
 	vec4 V = uPMatrix * (uMVMatrix * temp);;
     gl_Position = V;
-    vDepth = V.z / V.w;
+    vDepth = getDepth(V.z / V.w, near, far);
     vTextureCoord = aTextureCoord;
 
     gl_PointSize = 1.0;

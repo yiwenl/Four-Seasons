@@ -19,7 +19,7 @@ function SceneApp() {
 	this.count = 0;
 	this.easeSum = new bongiovi.EaseNumber(0, .25);
 	bongiovi.Scene.call(this);
-	this.camera.setPerspective(65 * Math.PI/180, GL.aspectRatio, 5, 200);
+	this.camera.setPerspective(75 * Math.PI/180, GL.aspectRatio, 5, 200);
 
 	window.addEventListener("resize", this.resize.bind(this));
 
@@ -126,6 +126,7 @@ p.updateFbo = function() {
 
 
 p.render = function() {
+	this.camera._ry.value += .01;
 	var skipCount = Math.floor(params.skipCount);
 	if(this.count % skipCount === 0) {
 		this.updateFbo();
@@ -143,14 +144,14 @@ p.render = function() {
 	
 	GL.clear(0, 0, 0, 0);
 	// this._vAxis.render();
-	this._vSky.render(this._textureSky);
+	this._vSky.render(this._textureSky, this.camera);
 	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera, this._textureFlower);
 	var numTiles = 2;
 	var size = 300;
 	for(var j=0; j<numTiles; j++) {
 		for(var i=0; i<numTiles; i++) {
 			var uvOffset = [i/numTiles, j/numTiles];
-			this._vTerrain.render(this._fboNoise.getTexture(), numTiles, size, uvOffset, this._fboNormal.getTexture(), this._textureNoise);
+			this._vTerrain.render(this._fboNoise.getTexture(), numTiles, size, uvOffset, this._fboNormal.getTexture(), this._textureNoise, this.camera);
 		}
 	}
 

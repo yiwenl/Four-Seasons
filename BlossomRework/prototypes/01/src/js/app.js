@@ -2,11 +2,12 @@
 window.bongiovi = require("./libs/bongiovi.js");
 window.Sono     = require("./libs/sono.min.js");
 var dat = require("dat-gui");
+var Stats = require("stats-js");
 
 window.params = {
-	skipCount:3,
-	numParticles:128,
-	windSpeed:.225,
+	skipCount:5,
+	numParticles:100,
+	windSpeed:1.,
 	noiseOffset:.02,
 	maxRadius:1000,
 	focusLength:.975,
@@ -68,7 +69,7 @@ window.params = {
 
 		this.gui = new dat.GUI({width:300});
 		this.gui.add(params, "skipCount", 1, 100);
-		this.gui.add(params, "windSpeed", 0, 1);
+		this.gui.add(params, "windSpeed", 0, 2);
 		this.gui.add(params, "noiseOffset", 0.01, 0.05);
 		this.gui.add(params, "maxRadius", 500.0, 1500.0);
 		this.gui.add(params, "focusLength", 0.9, 1.0);
@@ -77,10 +78,14 @@ window.params = {
 		this.gui.add(params, "terrainNoiseHeight", 0.0, 100.0);
 		this.gui.addColor(params, "lightColor");
 		this.gui.add(params, "enablePostEffect");
+
+		this.stats = new Stats();
+		// document.body.appendChild(this.stats.domElement);
 	};
 
 	p._loop = function() {
 		this._scene.loop();
+		this.stats.update();
 	};
 
 })();

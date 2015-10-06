@@ -112,8 +112,8 @@ p.render = function(texture, textureNext, percent, textureExtra, camera, texture
 	textureFlower.bind(3);
 	this.shader.uniform("percent", "uniform1f", percent);
 	this.shader.uniform("time", "uniform1f", this.time);
-	this.shader.uniform("zNear", "uniform1f", camera.near);
-	this.shader.uniform("zFar", "uniform1f", camera.far);
+	this.shader.uniform("near", "uniform1f", camera.near);
+	this.shader.uniform("far", "uniform1f", camera.far);
 	this.shader.uniform("maxRadius", "uniform1f", params.maxRadius);
 	this.shader.uniform("lightDir", "uniform3fv", params.lightPos);
 	this.shader.uniform("lightColor", "uniform3fv", params.lightColor);

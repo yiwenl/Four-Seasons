@@ -10,10 +10,17 @@ uniform vec2 uvOffset;
 uniform float numTiles;
 uniform float size;
 uniform float height;
+uniform float near;
+uniform float far;
 
 uniform sampler2D texture;
 
+varying float vDepth;
 varying vec2 vTextureCoord;
+
+float getDepth(float z, float n, float f) {
+	return (2.0 * n) / (f + n - z*(f-n));
+}
 
 
 vec3 getPosition(vec2 uv) {
@@ -39,6 +46,10 @@ void main(void) {
 	vec2 uv       = aTextureCoord / numTiles + uvOffset;
 	vec3 pos      = aVertexPosition;
 	pos           = getPosition(uv);
-	gl_Position   = uPMatrix * uMVMatrix * vec4(pos, 1.0);
+	vec4 V        = uPMatrix * uMVMatrix * vec4(pos, 1.0);
+	gl_Position   = V;
+	
+	float d       = getDepth(V.z/V.w, near, far);
+	vDepth        = d;
 	vTextureCoord = uv;
 }
