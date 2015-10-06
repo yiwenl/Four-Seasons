@@ -80,7 +80,7 @@ window.params = {
 		this.gui.add(params, "enablePostEffect");
 
 		this.stats = new Stats();
-		// document.body.appendChild(this.stats.domElement);
+		document.body.appendChild(this.stats.domElement);
 	};
 
 	p._loop = function() {

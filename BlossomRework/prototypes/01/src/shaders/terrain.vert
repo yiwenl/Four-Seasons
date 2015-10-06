@@ -12,6 +12,7 @@ uniform float size;
 uniform float height;
 uniform float near;
 uniform float far;
+uniform vec3 cameraPos;
 
 uniform sampler2D texture;
 
@@ -49,7 +50,10 @@ void main(void) {
 	vec4 V        = uPMatrix * uMVMatrix * vec4(pos, 1.0);
 	gl_Position   = V;
 	
-	float d       = getDepth(V.z/V.w, near, far);
+
+	// float d       = getDepth(V.z/V.w, near, far);
+	// float d       = getDepth(distance(cameraPos, /V.w, near, far);
+	float d 	  = clamp(distance(pos, cameraPos) / far, 0.0, 1.0);
 	vDepth        = d;
 	vTextureCoord = uv;
 }

@@ -5182,7 +5182,7 @@ var gl;
 
 
 function ViewSky() {
-	bongiovi.View.call(this, "#define GLSLIFY 1\n// sky.vert\n\n#define SHADER_NAME BASIC_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform float near;\nuniform float far;\n\nvarying float vDepth;\nvarying vec2 vTextureCoord;\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\nvoid main(void) {\n\tvec4 V        = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\n\tgl_Position   = V;\n\t\n\tfloat d       = getDepth(V.z/V.w, near, far);\n\tvDepth        = d;\n\tvTextureCoord = aTextureCoord;\n}", "#define GLSLIFY 1\n// sky.frag\n\nprecision highp float;\n\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\nvarying float vDepth;\n\nconst vec3 FOG_COLOR = vec3(243.0, 230.0, 214.0)/255.0;\n\nvoid main(void) {\n\tvec4 color = texture2D(texture, vTextureCoord);\n\tcolor.rgb = mix(color.rgb, FOG_COLOR, vDepth);\n\tgl_FragColor = color;\n}");
+	bongiovi.View.call(this, "#define GLSLIFY 1\n// sky.vert\n\n#define SHADER_NAME BASIC_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform float near;\nuniform float far;\n\nvarying float vDepth;\nvarying vec2 vTextureCoord;\nuniform vec3 cameraPos;\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\nvoid main(void) {\n\tvec3 pos      = aVertexPosition;\n\tvec4 V        = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);\n\tgl_Position   = V;\n\t\n\t// float d    = getDepth(V.z/V.w, near, far);\n\tfloat d       = clamp(distance(pos, cameraPos) / far, 0.0, 1.0);\n\tvDepth        = d;\n\tvTextureCoord = aTextureCoord;\n}", "#define GLSLIFY 1\n// sky.frag\n\nprecision highp float;\n\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\nvarying float vDepth;\n\nconst vec3 FOG_COLOR = vec3(243.0, 230.0, 214.0)/255.0;\n\nvoid main(void) {\n\tvec4 color = texture2D(texture, vTextureCoord);\n\tcolor.rgb = mix(color.rgb, FOG_COLOR, vDepth);\n\tgl_FragColor = color;\n}");
 }
 
 var p = ViewSky.prototype = new bongiovi.View();
@@ -5251,6 +5251,7 @@ p.render = function(texture, camera) {
 	this.shader.uniform("texture", "uniform1i", 0);
 	this.shader.uniform("near", "uniform1f", camera.near);
 	this.shader.uniform("far", "uniform1f", camera.far);
+	this.shader.uniform("cameraPos", "uniform3fv", camera.position);
 	texture.bind(0);
 	GL.draw(this.mesh);
 };
@@ -5264,7 +5265,7 @@ var gl;
 
 
 function ViewTerrain() {
-	bongiovi.View.call(this, "#define GLSLIFY 1\n#define SHADER_NAME BASIC_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform vec2 uvOffset;\nuniform float numTiles;\nuniform float size;\nuniform float height;\nuniform float near;\nuniform float far;\n\nuniform sampler2D texture;\n\nvarying float vDepth;\nvarying vec2 vTextureCoord;\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\n\nvec3 getPosition(vec2 uv) {\n\tvec3 pos = vec3(0.0, 0.0, 0.0);\n\tpos.x = -size/2.0 + uv.x * size;\n\tpos.z = size/2.0 - uv.y * size;\n\n\tfloat h = texture2D(texture, uv).r * height;\n\tpos.y += h;\n\n\treturn pos;\n}\n\n\nfloat map(float value, float sx, float sy, float tx, float ty) {\n\tfloat p = (value - sx) / ( sy - sx);\n\tp = clamp(p, 0.0, 1.0);\n\treturn tx + p * ( ty-tx );\n}\n\n\nvoid main(void) {\n\tvec2 uv       = aTextureCoord / numTiles + uvOffset;\n\tvec3 pos      = aVertexPosition;\n\tpos           = getPosition(uv);\n\tvec4 V        = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n\tgl_Position   = V;\n\t\n\tfloat d       = getDepth(V.z/V.w, near, far);\n\tvDepth        = d;\n\tvTextureCoord = uv;\n}", "#define GLSLIFY 1\n// terrain.frag\n\nprecision highp float;\n\nvarying vec2 vTextureCoord;\nuniform sampler2D textureNormal;\nuniform sampler2D textureNoise;\nuniform vec3 lightColor;\nuniform vec3 lightDir;\nuniform float bumpOffset;\nvarying float vDepth;\n\nconst float ambient_color = .75; \nconst vec3 ambient = vec3(ambient_color);\nconst float lightWeight = 1.0 - ambient_color;\n\nconst vec3 FOG_COLOR = vec3(243.0, 230.0, 214.0)/255.0;\nconst vec3 FLOOR_COLOR = vec3(230.0, 227.0, 222.0)/255.0;\n \n\nvoid main(void) {\n\tgl_FragColor = vec4(FLOOR_COLOR, 1.0);\n\tvec3 N = texture2D(textureNormal, vTextureCoord).rgb;\n\tN += (texture2D(textureNoise, vTextureCoord*5.0).rgb - vec3(.5))* bumpOffset;\n\tN = normalize(N);\n\tfloat lambert = max(0.0, dot(N, normalize(lightDir)));\n\tgl_FragColor.rgb *= ambient + lightColor/255.0 * lambert * lightWeight;\n\tgl_FragColor.rgb = mix(gl_FragColor.rgb, FOG_COLOR, vDepth);\n}");
+	bongiovi.View.call(this, "#define GLSLIFY 1\n#define SHADER_NAME BASIC_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform vec2 uvOffset;\nuniform float numTiles;\nuniform float size;\nuniform float height;\nuniform float near;\nuniform float far;\nuniform vec3 cameraPos;\n\nuniform sampler2D texture;\n\nvarying float vDepth;\nvarying vec2 vTextureCoord;\n\nfloat getDepth(float z, float n, float f) {\n\treturn (2.0 * n) / (f + n - z*(f-n));\n}\n\n\nvec3 getPosition(vec2 uv) {\n\tvec3 pos = vec3(0.0, 0.0, 0.0);\n\tpos.x = -size/2.0 + uv.x * size;\n\tpos.z = size/2.0 - uv.y * size;\n\n\tfloat h = texture2D(texture, uv).r * height;\n\tpos.y += h;\n\n\treturn pos;\n}\n\n\nfloat map(float value, float sx, float sy, float tx, float ty) {\n\tfloat p = (value - sx) / ( sy - sx);\n\tp = clamp(p, 0.0, 1.0);\n\treturn tx + p * ( ty-tx );\n}\n\n\nvoid main(void) {\n\tvec2 uv       = aTextureCoord / numTiles + uvOffset;\n\tvec3 pos      = aVertexPosition;\n\tpos           = getPosition(uv);\n\tvec4 V        = uPMatrix * uMVMatrix * vec4(pos, 1.0);\n\tgl_Position   = V;\n\t\n\n\t// float d       = getDepth(V.z/V.w, near, far);\n\t// float d       = getDepth(distance(cameraPos, /V.w, near, far);\n\tfloat d \t  = clamp(distance(pos, cameraPos) / far, 0.0, 1.0);\n\tvDepth        = d;\n\tvTextureCoord = uv;\n}", "#define GLSLIFY 1\n// terrain.frag\n\nprecision highp float;\n\nvarying vec2 vTextureCoord;\nuniform sampler2D textureNormal;\nuniform sampler2D textureNoise;\nuniform vec3 lightColor;\nuniform vec3 lightDir;\nuniform float bumpOffset;\nvarying float vDepth;\n\nconst float ambient_color = .75; \nconst vec3 ambient = vec3(ambient_color);\nconst float lightWeight = 1.0 - ambient_color;\n\nconst vec3 FOG_COLOR = vec3(243.0, 230.0, 214.0)/255.0;\nconst vec3 FLOOR_COLOR = vec3(230.0, 227.0, 222.0)/255.0;\n \n\nvoid main(void) {\n\tgl_FragColor = vec4(FLOOR_COLOR, 1.0);\n\tvec3 N = texture2D(textureNormal, vTextureCoord).rgb;\n\tN += (texture2D(textureNoise, vTextureCoord*5.0).rgb - vec3(.5))* bumpOffset;\n\tN = normalize(N);\n\tfloat lambert = max(0.0, dot(N, normalize(lightDir)));\n\tgl_FragColor.rgb *= ambient + lightColor/255.0 * lambert * lightWeight;\n\tgl_FragColor.rgb = mix(gl_FragColor.rgb, FOG_COLOR, vDepth);\n\t// gl_FragColor.rgb = vec3(vDepth);\n}");
 }
 
 var p = ViewTerrain.prototype = new bongiovi.View();
@@ -5320,7 +5321,7 @@ p._init = function() {
 
 p.render = function(texture, numTiles, size, uvOffset, textureNormal, textureNoise, camera) {
 	this.shader.bind();
-	
+
 	this.shader.uniform("size", "uniform1f", size);
 	this.shader.uniform("numTiles", "uniform1f", numTiles);
 	this.shader.uniform("height", "uniform1f", params.terrainNoiseHeight);
@@ -5328,6 +5329,7 @@ p.render = function(texture, numTiles, size, uvOffset, textureNormal, textureNoi
 	this.shader.uniform("bumpOffset", "uniform1f", params.bump);
 	this.shader.uniform("lightDir", "uniform3fv", params.lightPos);
 	this.shader.uniform("lightColor", "uniform3fv", params.lightColor);
+	this.shader.uniform("cameraPos", "uniform3fv", camera.position);
 	this.shader.uniform("texture", "uniform1i", 0);
 	texture.bind(0);
 	this.shader.uniform("textureNormal", "uniform1i", 1);
@@ -5425,7 +5427,7 @@ window.params = {
 		this.gui.add(params, "enablePostEffect");
 
 		this.stats = new Stats();
-		// document.body.appendChild(this.stats.domElement);
+		document.body.appendChild(this.stats.domElement);
 	};
 
 	p._loop = function() {

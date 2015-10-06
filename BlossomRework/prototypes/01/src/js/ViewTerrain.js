@@ -61,7 +61,7 @@ p._init = function() {
 
 p.render = function(texture, numTiles, size, uvOffset, textureNormal, textureNoise, camera) {
 	this.shader.bind();
-	
+
 	this.shader.uniform("size", "uniform1f", size);
 	this.shader.uniform("numTiles", "uniform1f", numTiles);
 	this.shader.uniform("height", "uniform1f", params.terrainNoiseHeight);
@@ -69,6 +69,7 @@ p.render = function(texture, numTiles, size, uvOffset, textureNormal, textureNoi
 	this.shader.uniform("bumpOffset", "uniform1f", params.bump);
 	this.shader.uniform("lightDir", "uniform3fv", params.lightPos);
 	this.shader.uniform("lightColor", "uniform3fv", params.lightColor);
+	this.shader.uniform("cameraPos", "uniform3fv", camera.position);
 	this.shader.uniform("texture", "uniform1i", 0);
 	texture.bind(0);
 	this.shader.uniform("textureNormal", "uniform1i", 1);

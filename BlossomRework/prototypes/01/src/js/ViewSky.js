@@ -74,6 +74,7 @@ p.render = function(texture, camera) {
 	this.shader.uniform("texture", "uniform1i", 0);
 	this.shader.uniform("near", "uniform1f", camera.near);
 	this.shader.uniform("far", "uniform1f", camera.far);
+	this.shader.uniform("cameraPos", "uniform3fv", camera.position);
 	texture.bind(0);
 	GL.draw(this.mesh);
 };

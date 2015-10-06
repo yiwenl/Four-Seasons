@@ -26,4 +26,5 @@ void main(void) {
 	float lambert = max(0.0, dot(N, normalize(lightDir)));
 	gl_FragColor.rgb *= ambient + lightColor/255.0 * lambert * lightWeight;
 	gl_FragColor.rgb = mix(gl_FragColor.rgb, FOG_COLOR, vDepth);
+	// gl_FragColor.rgb = vec3(vDepth);
 }

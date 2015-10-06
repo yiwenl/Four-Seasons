@@ -13,16 +13,19 @@ uniform float far;
 
 varying float vDepth;
 varying vec2 vTextureCoord;
+uniform vec3 cameraPos;
 
 float getDepth(float z, float n, float f) {
 	return (2.0 * n) / (f + n - z*(f-n));
 }
 
 void main(void) {
+	vec3 pos      = aVertexPosition;
 	vec4 V        = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
 	gl_Position   = V;
 	
-	float d       = getDepth(V.z/V.w, near, far);
+	// float d    = getDepth(V.z/V.w, near, far);
+	float d       = clamp(distance(pos, cameraPos) / far, 0.0, 1.0);
 	vDepth        = d;
 	vTextureCoord = aTextureCoord;
 }
