@@ -126,7 +126,7 @@ p.updateFbo = function() {
 
 
 p.render = function() {
-	this.camera._ry.value += .01;
+	if(params.cameraAutoRotate) this.camera._ry.value += .01;
 	var skipCount = Math.floor(params.skipCount);
 	if(this.count % skipCount === 0) {
 		this.updateFbo();

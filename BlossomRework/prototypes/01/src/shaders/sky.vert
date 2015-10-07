@@ -24,8 +24,7 @@ void main(void) {
 	vec4 V        = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
 	gl_Position   = V;
 	
-	// float d    = getDepth(V.z/V.w, near, far);
-	float d       = clamp(distance(pos, cameraPos) / far, 0.0, 1.0);
+	float d    	  = getDepth(V.z/V.w, near, far);
 	vDepth        = d;
 	vTextureCoord = aTextureCoord;
 }

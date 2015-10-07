@@ -6,9 +6,10 @@ var Stats = require("stats-js");
 
 window.params = {
 	skipCount:5,
-	numParticles:100,
-	windSpeed:1.5,
+	numParticles:150,
+	windSpeed:1.75,
 	noiseOffset:.02,
+	noiseDifference:.35,
 	maxRadius:1000,
 	focusLength:.975,
 	depthContrast:1.0,
@@ -22,7 +23,8 @@ window.params = {
 	detailMapHeight:.05,
 	bump:.3,
 	enablePostEffect:false,
-	showStats:false
+	showStats:false,
+	cameraAutoRotate:false
 
 };
 
@@ -72,6 +74,7 @@ window.params = {
 		this.gui.add(params, "skipCount", 1, 100);
 		this.gui.add(params, "windSpeed", 0, 5);
 		this.gui.add(params, "noiseOffset", 0.01, 0.05);
+		this.gui.add(params, "noiseDifference", 0, 1);
 		this.gui.add(params, "maxRadius", 500.0, 1500.0);
 		this.gui.add(params, "focusLength", 0.9, 1.0);
 		this.gui.add(params, "depthContrast", 1.0, 5.0);
@@ -79,6 +82,7 @@ window.params = {
 		this.gui.add(params, "terrainNoiseHeight", 0.0, 100.0);
 		this.gui.addColor(params, "lightColor");
 		this.gui.add(params, "enablePostEffect");
+		this.gui.add(params, "cameraAutoRotate");
 		this.gui.add(params, "showStats").onFinishChange(this._onStats.bind(this));
 
 		this.stats = new Stats();

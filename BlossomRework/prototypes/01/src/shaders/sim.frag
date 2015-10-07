@@ -78,6 +78,7 @@ float rand(vec2 co){
 uniform float time;
 uniform float maxRadius;
 uniform float noiseOffset;
+uniform float noiseDifference;
 uniform float windSpeed;
 
 void main(void) {
@@ -104,12 +105,12 @@ void main(void) {
 			vec3 extras = texture2D(textureExtra, uvExtra).rgb;
 
 
-			float posOffset = noiseOffset * mix(extras.r , 1.0, .35);
+			float posOffset = noiseOffset * mix(extras.r , 1.0, noiseDifference);
 			float ax = snoise(pos.x*posOffset + time, pos.y*posOffset + time, pos.z*posOffset + time) + .35;
 			float ay = snoise(pos.y*posOffset + time, pos.z*posOffset + time, pos.x*posOffset + time) + .2;
 			float az = snoise(pos.z*posOffset + time, pos.x*posOffset + time, pos.y*posOffset + time);
 
-			float windStrength = windSpeed * (mix(extras.g, 1.0, .15) + .01);
+			float windStrength = windSpeed * (mix(extras.g, 1.0, .5) + .01);
 			vel += vec3(ax, ay, az) * windStrength;
 
 			vel *= .95;

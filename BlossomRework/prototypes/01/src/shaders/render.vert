@@ -67,10 +67,24 @@ void main(void) {
 	vec3 posCurrent = texture2D(texture, uv).rgb;
 	vec3 posNext = texture2D(textureNext, uv).rgb;
 	if(length(posNext) - length(posCurrent) < -(maxRadius*.5)) posNext = normalize(posCurrent) * maxRadius;
-	else vOpacity = 1.0;
 
 	temp.xyz += mix(posCurrent, posNext, percent);
+	vec3 finalPos = temp.xyz;
 	temp.xyz *= .1;
+
+	vOpacity = 1.0;
+	float fadeOutRange = 100.0 + extras.z * 100.0;
+	const vec3 emitCenter = vec3(0.0, 300.0, 0.0);
+	// float distanceToEdge = min(distance(finalPos, emitCenter), maxRadius);
+	float distanceToEdge = min(length(finalPos), maxRadius);
+	if(distanceToEdge > maxRadius - fadeOutRange) {
+		vOpacity = (maxRadius - distanceToEdge) / fadeOutRange;
+	}
+
+	// fadeOutRange = 150.0;
+	// if(distanceToEdge<fadeOutRange) {
+	// 	vOpacity = distanceToEdge / fadeOutRange;
+	// }
 
 
 	vec4 V = uPMatrix * (uMVMatrix * temp);;
