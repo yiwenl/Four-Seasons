@@ -12,6 +12,7 @@ var ViewPost = require("./ViewPost");
 var ViewTerrain = require("./ViewTerrain");
 var ViewNoise = require("./ViewNoise");
 var ViewNormal = require("./ViewNormal");
+var ViewTree = require("./ViewTree");
 
 function SceneApp() {
 	gl = GL.gl;
@@ -22,6 +23,7 @@ function SceneApp() {
 	this.camera.setPerspective(65 * Math.PI/180, GL.aspectRatio, 5, 200);
 
 	window.addEventListener("resize", this.resize.bind(this));
+	window.addEventListener("keydown", this._onKey.bind(this));
 
 	this.camera.lockRotation(false);
 	this.sceneRotation.lock(true);
@@ -44,6 +46,8 @@ p._initTextures = function() {
 	this._textureNoise        = new bongiovi.GLTexture(images.noise);
 	this._textureDetailHeight = new bongiovi.GLTexture(images.detailHeight);
 	this._textureFlower       = new bongiovi.GLTexture(images.flower);
+	this._textureLeaves       = new bongiovi.GLTexture(images.leaves);
+	this._textureTree         = new bongiovi.GLTexture(images.tree);
 	
 	var num                   = params.numParticles;
 	var o                     = { minFilter:gl.NEAREST,magFilter:gl.NEAREST}
@@ -72,6 +76,7 @@ p._initViews = function() {
 	this._vVBlur     = new ViewBlur(true);
 	this._vHBlur     = new ViewBlur(false);
 	this._vPost      = new ViewPost();
+	this._vTree 	 = new ViewTree();
 	this._vNoise     = new ViewNoise(params.noise);
 	this._vNormal    = new ViewNormal(params.terrainNoiseHeight/300*3.0);
 
@@ -145,7 +150,8 @@ p.render = function() {
 	GL.clear(0, 0, 0, 0);
 	// this._vAxis.render();
 	this._vSky.render(this._textureSky, this.camera);
-	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera, this._textureFlower);
+	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera, this._textureFlower, this._textureLeaves);
+	this._vTree.render(this._textureTree);
 	var numTiles = 2;
 	var size = 300;
 	for(var j=0; j<numTiles; j++) {
@@ -199,6 +205,15 @@ p.render = function() {
 	GL.setViewport(0, subscreenSize, subscreenSize*GL.aspectRatio, subscreenSize);
 	this._vCopy.render(this._fboNormal.getTexture());
 	*/
+};
+
+p._onKey = function(e) {
+	// console.log(e.keyCode);
+	if(e.keyCode == 32) {
+		console.log(params.textureMix.targetValue);
+		params.textureMix.value = (params.textureMix.targetValue == 0) ? 1 : 0;
+	}
+	
 };
 
 
