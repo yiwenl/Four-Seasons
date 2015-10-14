@@ -13,7 +13,7 @@ window.params = {
 	maxRadius:1000,
 	focusLength:.975,
 	depthContrast:1.0,
-	blur:1.0,
+	blur:.2,
 	textureMix:new bongiovi.EaseNumber(0.0, .05),
 	terrainNoiseHeight:35.0,
 	lightPos:[1.0, 1.0, 1.0],
