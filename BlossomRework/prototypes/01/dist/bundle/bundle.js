@@ -4445,8 +4445,9 @@ p._clearAll = function() {
 	this._mesh          = [];	
 };
 
-p.load = function(url, callback, callbackError) {
+p.load = function(url, callback, callbackError, ignoreNormals) {
 	this._clearAll();
+	this._ignoreNormals = ignoreNormals === undefined ? true : ignoreNormals;
 
 	this._callback = callback;
 	this._callbackError = callbackError;
@@ -4535,6 +4536,13 @@ p._parseObj = function(objStr) {
 		coords.push([uvs[c], uvs[c+1]]);
 	}
 
+
+	function addNormal(a, b, c) {
+		finalNormals.push([normals[a], normals[a+1], normals[a+2]]);
+		finalNormals.push([normals[b], normals[b+1], normals[b+2]]);
+		finalNormals.push([normals[c], normals[c+1], normals[c+2]]);
+	}
+
 	function addFace( a, b, c, d,  ua, ub, uc, ud,  na, nb, nc, nd ) {
 		var ia = parseVertexIndex( a );
 		var ib = parseVertexIndex( b );
@@ -4570,6 +4578,27 @@ p._parseObj = function(objStr) {
 
 				addUV( ia, ib, id );
 				addUV( ib, ic, id );
+
+			}
+
+		}
+
+		if ( na !== undefined ) {
+
+			var ia = parseNormalIndex( na );
+			var ib = parseNormalIndex( nb );
+			var ic = parseNormalIndex( nc );
+
+			if ( d === undefined ) {
+
+				addNormal( ia, ib, ic );
+
+			} else {
+
+				var id = parseNormalIndex( nd );
+
+				addNormal( ia, ib, id );
+				addNormal( ib, ic, id );
 
 			}
 
@@ -4643,6 +4672,7 @@ p._parseObj = function(objStr) {
 	this._generateMeshes({	
 		positions:positions,
 		coords:coords,
+		normals:finalNormals,
 		indices:indices
 	});
 	
@@ -4656,6 +4686,9 @@ p._generateMeshes = function(o) {
 	mesh.bufferVertex(o.positions);
 	mesh.bufferTexCoords(o.coords);
 	mesh.bufferIndices(o.indices);
+	if(!this._ignoreNormals) {
+		mesh.bufferData(o.normals, "aNormal", 3);
+	}
 
 	if(this._callback) {
 		this._callback(mesh);
@@ -5607,11 +5640,13 @@ module.exports = ViewTerrain;
 
 var GL = bongiovi.GL;
 var gl;
+
 var ObjLoader = require("./ObjLoader");
 
 function ViewTree() {
 	// bongiovi.View.call(this, bongiovi.ShaderLibs.get("generalVert"), bongiovi.ShaderLibs.get("simpleColorFrag"));
-	bongiovi.View.call(this, bongiovi.ShaderLibs.get("generalVert"));
+	bongiovi.View.call(this, "#define GLSLIFY 1\n// tree.vert\n\n#define SHADER_NAME VERTEX_TREE\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec3 aNormal;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\n\n\nvoid main(void) {\n\tvec3 pos \t\t= aVertexPosition * scale + position;\n\tgl_Position   \t= uPMatrix * uMVMatrix * vec4(pos, 1.0);\n\tvTextureCoord \t= aTextureCoord;\n\tvNormal\t\t  \t= aNormal;\n}");
+	// bongiovi.View.call(this, glslify("../shaders/tree.vert"), glslify("../shaders/tree.frag"));
 }
 
 var p = ViewTree.prototype = new bongiovi.View();
@@ -5619,7 +5654,7 @@ p.constructor = ViewTree;
 
 
 p._init = function() {
-	ObjLoader.load("assets/DeadTree21.obj", this._onObjMesh.bind(this));
+	ObjLoader.load("assets/DeadTree21.obj", this._onObjMesh.bind(this), null, false);
 	// ObjLoader.load("assets/DeadTree21_LOD.obj", this._onObjMesh.bind(this));
 };
 

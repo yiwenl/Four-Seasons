@@ -16,8 +16,9 @@ p._clearAll = function() {
 	this._mesh          = [];	
 };
 
-p.load = function(url, callback, callbackError) {
+p.load = function(url, callback, callbackError, ignoreNormals) {
 	this._clearAll();
+	this._ignoreNormals = ignoreNormals === undefined ? true : ignoreNormals;
 
 	this._callback = callback;
 	this._callbackError = callbackError;
@@ -106,6 +107,13 @@ p._parseObj = function(objStr) {
 		coords.push([uvs[c], uvs[c+1]]);
 	}
 
+
+	function addNormal(a, b, c) {
+		finalNormals.push([normals[a], normals[a+1], normals[a+2]]);
+		finalNormals.push([normals[b], normals[b+1], normals[b+2]]);
+		finalNormals.push([normals[c], normals[c+1], normals[c+2]]);
+	}
+
 	function addFace( a, b, c, d,  ua, ub, uc, ud,  na, nb, nc, nd ) {
 		var ia = parseVertexIndex( a );
 		var ib = parseVertexIndex( b );
@@ -141,6 +149,27 @@ p._parseObj = function(objStr) {
 
 				addUV( ia, ib, id );
 				addUV( ib, ic, id );
+
+			}
+
+		}
+
+		if ( na !== undefined ) {
+
+			var ia = parseNormalIndex( na );
+			var ib = parseNormalIndex( nb );
+			var ic = parseNormalIndex( nc );
+
+			if ( d === undefined ) {
+
+				addNormal( ia, ib, ic );
+
+			} else {
+
+				var id = parseNormalIndex( nd );
+
+				addNormal( ia, ib, id );
+				addNormal( ib, ic, id );
 
 			}
 
@@ -214,6 +243,7 @@ p._parseObj = function(objStr) {
 	this._generateMeshes({	
 		positions:positions,
 		coords:coords,
+		normals:finalNormals,
 		indices:indices
 	});
 	
@@ -227,6 +257,9 @@ p._generateMeshes = function(o) {
 	mesh.bufferVertex(o.positions);
 	mesh.bufferTexCoords(o.coords);
 	mesh.bufferIndices(o.indices);
+	if(!this._ignoreNormals) {
+		mesh.bufferData(o.normals, "aNormal", 3);
+	}
 
 	if(this._callback) {
 		this._callback(mesh);

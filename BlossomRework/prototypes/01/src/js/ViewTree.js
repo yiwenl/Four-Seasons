@@ -2,11 +2,13 @@
 
 var GL = bongiovi.GL;
 var gl;
+var glslify = require("glslify");
 var ObjLoader = require("./ObjLoader");
 
 function ViewTree() {
 	// bongiovi.View.call(this, bongiovi.ShaderLibs.get("generalVert"), bongiovi.ShaderLibs.get("simpleColorFrag"));
-	bongiovi.View.call(this, bongiovi.ShaderLibs.get("generalVert"));
+	bongiovi.View.call(this, glslify("../shaders/tree.vert"));
+	// bongiovi.View.call(this, glslify("../shaders/tree.vert"), glslify("../shaders/tree.frag"));
 }
 
 var p = ViewTree.prototype = new bongiovi.View();
@@ -14,7 +16,7 @@ p.constructor = ViewTree;
 
 
 p._init = function() {
-	ObjLoader.load("assets/DeadTree21.obj", this._onObjMesh.bind(this));
+	ObjLoader.load("assets/DeadTree21.obj", this._onObjMesh.bind(this), null, false);
 	// ObjLoader.load("assets/DeadTree21_LOD.obj", this._onObjMesh.bind(this));
 };
 
