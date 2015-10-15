@@ -3,7 +3,7 @@
 var GL = bongiovi.GL;
 var gl;
 var glslify = require("glslify");
-var ObjLoader = require("./ObjLoader");
+// var ObjLoader = require("./ObjLoader");
 
 
 function ViewTree() {
@@ -17,7 +17,7 @@ p.constructor = ViewTree;
 
 
 p._init = function() {
-	ObjLoader.load("assets/DeadTree21.obj", this._onObjMesh.bind(this), null, false);
+	bongiovi.ObjLoader.load("assets/DeadTree21.obj", this._onObjMesh.bind(this), null, false);
 };
 
 
