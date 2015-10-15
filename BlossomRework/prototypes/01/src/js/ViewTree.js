@@ -5,7 +5,10 @@ var gl;
 var glslify = require("glslify");
 var ObjLoader = require("./ObjLoader");
 
+
 function ViewTree() {
+	this.scale = .05;
+	this.y = -4;
 	bongiovi.View.call(this, glslify("../shaders/tree.vert"), glslify("../shaders/tree.frag"));
 }
 
@@ -18,19 +21,22 @@ p._init = function() {
 };
 
 
-p._onObjMesh = function(mesh) {
+p._onObjMesh = function(mesh, o) {
 	this.mesh = mesh;
-};
 
+	var positions = o.positions;
+	var threshold = 15;
+	this.leavesPositions = [];
+	var scaleOffset = 9.5;
 
-p._onObjLoaded = function(e) {
-	var o = this._parseObj(e.response);
-	gl = GL.gl;
-
-	this.mesh = new bongiovi.Mesh(o.positions.length, o.indices.length, GL.gl.TRIANGLES);
-	this.mesh.bufferVertex(o.positions);
-	this.mesh.bufferTexCoords(o.coords);
-	this.mesh.bufferIndices(o.indices);
+	for(var i=0; i<positions.length; i++) {
+		var p = positions[i];
+		var y = p[1] * this.scale;
+		if(y > threshold) {
+			this.leavesPositions.push([p[0] * this.scale * scaleOffset, p[1] * this.scale * scaleOffset - 2.5*scaleOffset, p[2] * this.scale * scaleOffset]);
+			// this.leavesPositions.push(p);
+		}
+	}
 };
 
 
@@ -45,11 +51,11 @@ p.render = function(texture, textureNormal) {
 	textureNormal.bind(1);
 	this.shader.uniform("color", "uniform3fv", [1, 1, 1]);
 	this.shader.uniform("opacity", "uniform1f", 1);
-	this.shader.uniform("position", "uniform3fv", [0, -4, 0]);
+	this.shader.uniform("position", "uniform3fv", [0, this.y, 0]);
 	this.shader.uniform("lightDir", "uniform3fv", params.lightPos);
 	this.shader.uniform("lightColor", "uniform3fv", params.lightColor);
-	var scale = .05;
-	this.shader.uniform("scale", "uniform3fv", [scale, scale, scale]);
+	
+	this.shader.uniform("scale", "uniform3fv", [this.scale, this.scale, this.scale]);
 	
 	
 	GL.draw(this.mesh);

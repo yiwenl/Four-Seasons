@@ -36,6 +36,13 @@ p._onXHTPState = function(e) {
 };
 
 
+p.parse = function(objStr, callback, callbackError, ignoreNormals) {
+	this._clearAll();
+	this._ignoreNormals = ignoreNormals === undefined ? true : ignoreNormals;
+
+	this._parseObj(objStr);
+};
+
 
 p._parseObj = function(objStr) {
 	var lines = objStr.split('\n');
@@ -262,7 +269,7 @@ p._generateMeshes = function(o) {
 	}
 
 	if(this._callback) {
-		this._callback(mesh);
+		this._callback(mesh, o);
 	}
 };
 

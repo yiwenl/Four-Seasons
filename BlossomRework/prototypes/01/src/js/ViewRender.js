@@ -84,10 +84,7 @@ p._init = function() {
 			indices.push(count*4 + 2);
 			indices.push(count*4 + 3);
 
-			
-
 			count ++;
-
 		}
 	}
 
@@ -99,7 +96,7 @@ p._init = function() {
 	this.mesh.bufferData(normals, "aNormal", 3);
 };
 
-p.render = function(texture, textureNext, percent, textureExtra, camera, textureFlower, textureLeaves) {
+p.render = function(texture, textureNext, percent, textureExtra, camera, textureFlower, textureLeaves, mixOffset) {
 
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
@@ -117,7 +114,7 @@ p.render = function(texture, textureNext, percent, textureExtra, camera, texture
 	this.shader.uniform("near", "uniform1f", camera.near);
 	this.shader.uniform("far", "uniform1f", camera.far);
 	this.shader.uniform("maxRadius", "uniform1f", params.maxRadius);
-	this.shader.uniform("mixOffset", "uniform1f", params.textureMix.value);
+	this.shader.uniform("mixOffset", "uniform1f", mixOffset);
 	this.shader.uniform("lightDir", "uniform3fv", params.lightPos);
 	this.shader.uniform("lightColor", "uniform3fv", params.lightColor);
 

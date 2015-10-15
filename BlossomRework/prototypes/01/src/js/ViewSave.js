@@ -4,8 +4,13 @@ var GL = bongiovi.GL;
 var gl;
 var glslify = require("glslify");
 var random = function(min, max) { return min + Math.random() * (max - min);	};
+var getRandomElm = function(array) {
+	var index = Math.floor(Math.random() * array.length);
+	return array[index];
+}
 
-function ViewSave() {
+function ViewSave(leavePositions) {
+	this.leavePositions = leavePositions;
 	bongiovi.View.call(this, glslify("../shaders/save.vert"), glslify("../shaders/save.frag"));
 }
 
@@ -25,11 +30,16 @@ p._init = function() {
 	var totalParticles = numParticles * numParticles;
 	console.log('Total Particles : ', totalParticles);
 	var ux, uy;
-	var range = 100.0, y=300;
+	var range = 15.0, y=300;
 
 	for(var j=0; j<numParticles; j++) {
 		for(var i=0; i<numParticles; i++) {
-			var pos = [random(-range, range), random(-range, range)+y, random(-range, range)];
+			// var pos = [random(-range, range), random(-range, range)+y, random(-range, range)];
+
+			var pos = getRandomElm(this.leavePositions);
+			pos[0] += random(-range, range);
+			pos[1] += random(-range, range);
+			pos[2] += random(-range, range);
 			positions.push(pos);
 
 			ux = i/numParticles-1.0 + .5/numParticles;
