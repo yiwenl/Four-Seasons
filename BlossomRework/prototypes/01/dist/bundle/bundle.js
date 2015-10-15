@@ -4749,6 +4749,7 @@ p._initTextures = function() {
 	this._textureFlower       = new bongiovi.GLTexture(images.flower);
 	this._textureLeaves       = new bongiovi.GLTexture(images.leaves);
 	this._textureTree         = new bongiovi.GLTexture(images.tree);
+	this._textureTreeNormal   = new bongiovi.GLTexture(images.treeNormal);
 	
 	var num                   = params.numParticles;
 	var o                     = { minFilter:gl.NEAREST,magFilter:gl.NEAREST}
@@ -4852,7 +4853,7 @@ p.render = function() {
 	// this._vAxis.render();
 	this._vSky.render(this._textureSky, this.camera);
 	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera, this._textureFlower, this._textureLeaves);
-	this._vTree.render(this._textureTree);
+	this._vTree.render(this._textureTree, this._textureTreeNormal);
 	var numTiles = 2;
 	var size = 300;
 	for(var j=0; j<numTiles; j++) {
@@ -5644,9 +5645,7 @@ var gl;
 var ObjLoader = require("./ObjLoader");
 
 function ViewTree() {
-	// bongiovi.View.call(this, bongiovi.ShaderLibs.get("generalVert"), bongiovi.ShaderLibs.get("simpleColorFrag"));
-	bongiovi.View.call(this, "#define GLSLIFY 1\n// tree.vert\n\n#define SHADER_NAME VERTEX_TREE\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec3 aNormal;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\n\n\nvoid main(void) {\n\tvec3 pos \t\t= aVertexPosition * scale + position;\n\tgl_Position   \t= uPMatrix * uMVMatrix * vec4(pos, 1.0);\n\tvTextureCoord \t= aTextureCoord;\n\tvNormal\t\t  \t= aNormal;\n}");
-	// bongiovi.View.call(this, glslify("../shaders/tree.vert"), glslify("../shaders/tree.frag"));
+	bongiovi.View.call(this, "#define GLSLIFY 1\n// tree.vert\n\n#define SHADER_NAME VERTEX_TREE\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec3 aNormal;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uMVMatrix;\nuniform mat4 uPMatrix;\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\n\n\nvoid main(void) {\n\tvec3 pos \t\t= aVertexPosition * scale + position;\n\tgl_Position   \t= uPMatrix * uMVMatrix * vec4(pos, 1.0);\n\tvTextureCoord \t= aTextureCoord;\n\tvNormal\t\t  \t= aNormal;\n}", "#define GLSLIFY 1\n// tree.frag\n\nprecision highp float;\n\nuniform sampler2D texture;\nuniform sampler2D textureNormal;\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\n\n\nuniform vec3 lightColor;\nuniform vec3 lightDir;\n\nconst float ambient_color = .5; \nconst vec3 ambient = vec3(ambient_color);\nconst float lightWeight = 1.0 - ambient_color;\n\nvoid main(void) {\n\tvec2 uv                = vTextureCoord;\n\tvec4 color             = texture2D(texture, uv);\n\tvec3 colorNormal       = texture2D(texture, uv).rgb;\n\t\n\tconst float bumpOffset = .2;\n\tvec3 N                 = vNormal + (colorNormal-.5) * bumpOffset;\n\tN                      = normalize(N);\n\t\n\tfloat lambert          = max(0.0, dot(N, normalize(lightDir)));\n\t\n\tcolor.rgb              *= ambient + lightColor/255.0 * lambert * lightWeight;\n\tgl_FragColor           = color;\n}");
 }
 
 var p = ViewTree.prototype = new bongiovi.View();
@@ -5655,16 +5654,16 @@ p.constructor = ViewTree;
 
 p._init = function() {
 	ObjLoader.load("assets/DeadTree21.obj", this._onObjMesh.bind(this), null, false);
-	// ObjLoader.load("assets/DeadTree21_LOD.obj", this._onObjMesh.bind(this));
 };
+
 
 p._onObjMesh = function(mesh) {
 	this.mesh = mesh;
 };
 
+
 p._onObjLoaded = function(e) {
 	var o = this._parseObj(e.response);
-
 	gl = GL.gl;
 
 	this.mesh = new bongiovi.Mesh(o.positions.length, o.indices.length, GL.gl.TRIANGLES);
@@ -5674,16 +5673,20 @@ p._onObjLoaded = function(e) {
 };
 
 
-p.render = function(texture) {
+p.render = function(texture, textureNormal) {
 	if(!this.shader.isReady() ) return;
 	if(!this.mesh) return;
 
 	this.shader.bind();
 	this.shader.uniform("texture", "uniform1i", 0);
 	texture.bind(0);
+	this.shader.uniform("textureNormal", "uniform1i", 1);
+	textureNormal.bind(1);
 	this.shader.uniform("color", "uniform3fv", [1, 1, 1]);
 	this.shader.uniform("opacity", "uniform1f", 1);
 	this.shader.uniform("position", "uniform3fv", [0, -4, 0]);
+	this.shader.uniform("lightDir", "uniform3fv", params.lightPos);
+	this.shader.uniform("lightColor", "uniform3fv", params.lightColor);
 	var scale = .05;
 	this.shader.uniform("scale", "uniform3fv", [scale, scale, scale]);
 	
@@ -5736,6 +5739,7 @@ window.params = {
 			"assets/flower.png",
 			"assets/leaves.png",
 			"assets/tree.jpg",
+			"assets/treeNormal.jpg",
 			"assets/bg.jpg"
 		];
 

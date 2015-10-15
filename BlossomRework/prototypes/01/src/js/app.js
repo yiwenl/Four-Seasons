@@ -41,6 +41,7 @@ window.params = {
 			"assets/flower.png",
 			"assets/leaves.png",
 			"assets/tree.jpg",
+			"assets/treeNormal.jpg",
 			"assets/bg.jpg"
 		];
 

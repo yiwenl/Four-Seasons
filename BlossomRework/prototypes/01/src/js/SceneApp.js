@@ -48,6 +48,7 @@ p._initTextures = function() {
 	this._textureFlower       = new bongiovi.GLTexture(images.flower);
 	this._textureLeaves       = new bongiovi.GLTexture(images.leaves);
 	this._textureTree         = new bongiovi.GLTexture(images.tree);
+	this._textureTreeNormal   = new bongiovi.GLTexture(images.treeNormal);
 	
 	var num                   = params.numParticles;
 	var o                     = { minFilter:gl.NEAREST,magFilter:gl.NEAREST}
@@ -151,7 +152,7 @@ p.render = function() {
 	// this._vAxis.render();
 	this._vSky.render(this._textureSky, this.camera);
 	this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), percent, this._fboExtras.getTexture(), this.camera, this._textureFlower, this._textureLeaves);
-	this._vTree.render(this._textureTree);
+	this._vTree.render(this._textureTree, this._textureTreeNormal);
 	var numTiles = 2;
 	var size = 300;
 	for(var j=0; j<numTiles; j++) {
