@@ -7,9 +7,9 @@ var Stats = require("stats-js");
 window.params = {
 	skipCount:5,
 	numParticles:150,
-	windSpeed:1.75,
-	noiseOffset:.02,
-	noiseDifference:.35,
+	windSpeed:1.5,
+	noiseOffset:.0175,
+	noiseDifference:.3,
 	maxRadius:1000,
 	focusLength:.975,
 	depthContrast:1.0,

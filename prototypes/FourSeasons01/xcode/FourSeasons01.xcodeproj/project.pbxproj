@@ -1,0 +1,434 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0091D8F90E81B9330029341E /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0091D8F80E81B9330029341E /* OpenGL.framework */; };
+		00B784B30FF439BC000DE1D7 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B784AF0FF439BC000DE1D7 /* Accelerate.framework */; };
+		00B784B40FF439BC000DE1D7 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B784B00FF439BC000DE1D7 /* AudioToolbox.framework */; };
+		00B784B50FF439BC000DE1D7 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B784B10FF439BC000DE1D7 /* AudioUnit.framework */; };
+		00B784B60FF439BC000DE1D7 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B784B20FF439BC000DE1D7 /* CoreAudio.framework */; };
+		21F48F8B4E0E48A18A637AED /* FourSeasons01App.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 437AC632881140939335B2A1 /* FourSeasons01App.cpp */; };
+		5323E6B20EAFCA74003A9687 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5323E6B10EAFCA74003A9687 /* CoreVideo.framework */; };
+		5323E6B60EAFCA7E003A9687 /* QTKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5323E6B50EAFCA7E003A9687 /* QTKit.framework */; };
+		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		A2D0092D1C369AE300903003 /* images in Resources */ = {isa = PBXBuildFile; fileRef = A2D0092B1C369AE300903003 /* images */; };
+		A2D0092E1C369AE300903003 /* shaders in Resources */ = {isa = PBXBuildFile; fileRef = A2D0092C1C369AE300903003 /* shaders */; };
+		A2D0094D1C369AEF00903003 /* BitmapUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D009301C369AEF00903003 /* BitmapUtils.cpp */; };
+		A2D0094E1C369AEF00903003 /* CameraControl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D009321C369AEF00903003 /* CameraControl.cpp */; };
+		A2D0094F1C369AEF00903003 /* EffectComposer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D009351C369AEF00903003 /* EffectComposer.cpp */; };
+		A2D009501C369AEF00903003 /* MathUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D009371C369AEF00903003 /* MathUtils.cpp */; };
+		A2D009511C369AEF00903003 /* MeshUtils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D009391C369AEF00903003 /* MeshUtils.cpp */; };
+		A2D009521C369AEF00903003 /* Scene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D0093B1C369AEF00903003 /* Scene.cpp */; };
+		A2D009531C369AEF00903003 /* SceneQuat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D0093D1C369AEF00903003 /* SceneQuat.cpp */; };
+		A2D009541C369AEF00903003 /* Utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D0093F1C369AEF00903003 /* Utils.cpp */; };
+		A2D009551C369AEF00903003 /* View.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D009411C369AEF00903003 /* View.cpp */; };
+		A2D009561C369AEF00903003 /* ViewAxis.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D009431C369AEF00903003 /* ViewAxis.cpp */; };
+		A2D009571C369AEF00903003 /* ViewBlur.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D009451C369AEF00903003 /* ViewBlur.cpp */; };
+		A2D009581C369AEF00903003 /* ViewCopy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D009471C369AEF00903003 /* ViewCopy.cpp */; };
+		A2D009591C369AEF00903003 /* ViewDotPlane.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D009491C369AEF00903003 /* ViewDotPlane.cpp */; };
+		A2D0095A1C369AEF00903003 /* SceneApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D0094B1C369AEF00903003 /* SceneApp.cpp */; };
+		A47436873C0B464DB3D22117 /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF53CFF386834808985650DB /* QuickTime.framework */; };
+		C8A89FDF99A94557AD574B0D /* CinderApp.icns in Resources */ = {isa = PBXBuildFile; fileRef = C14ADAAD35624ABAA39AA23F /* CinderApp.icns */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0091D8F80E81B9330029341E /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
+		00B784AF0FF439BC000DE1D7 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		00B784B00FF439BC000DE1D7 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		00B784B10FF439BC000DE1D7 /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = System/Library/Frameworks/AudioUnit.framework; sourceTree = SDKROOT; };
+		00B784B20FF439BC000DE1D7 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
+		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		437AC632881140939335B2A1 /* FourSeasons01App.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.cpp; name = FourSeasons01App.cpp; path = ../src/FourSeasons01App.cpp; sourceTree = "<group>"; };
+		5323E6B10EAFCA74003A9687 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = /System/Library/Frameworks/CoreVideo.framework; sourceTree = "<absolute>"; };
+		5323E6B50EAFCA7E003A9687 /* QTKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QTKit.framework; path = /System/Library/Frameworks/QTKit.framework; sourceTree = "<absolute>"; };
+		6BDB1706DE3B4483A5B63C19 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		88089C9CA2D0485999521C2F /* Resources.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Resources.h; path = ../include/Resources.h; sourceTree = "<group>"; };
+		8D1107320486CEB800E47090 /* FourSeasons01.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FourSeasons01.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		94B8A9EF3F0E4DEA9E476DBC /* FourSeasons01_Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = "\"\""; path = FourSeasons01_Prefix.pch; sourceTree = "<group>"; };
+		A2D0092B1C369AE300903003 /* images */ = {isa = PBXFileReference; lastKnownFileType = folder; name = images; path = ../assets/images; sourceTree = "<group>"; };
+		A2D0092C1C369AE300903003 /* shaders */ = {isa = PBXFileReference; lastKnownFileType = folder; name = shaders; path = ../assets/shaders; sourceTree = "<group>"; };
+		A2D009301C369AEF00903003 /* BitmapUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BitmapUtils.cpp; sourceTree = "<group>"; };
+		A2D009311C369AEF00903003 /* BitmapUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BitmapUtils.h; sourceTree = "<group>"; };
+		A2D009321C369AEF00903003 /* CameraControl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CameraControl.cpp; sourceTree = "<group>"; };
+		A2D009331C369AEF00903003 /* CameraControl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CameraControl.h; sourceTree = "<group>"; };
+		A2D009341C369AEF00903003 /* EaseNumber.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EaseNumber.h; sourceTree = "<group>"; };
+		A2D009351C369AEF00903003 /* EffectComposer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = EffectComposer.cpp; sourceTree = "<group>"; };
+		A2D009361C369AEF00903003 /* EffectComposer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EffectComposer.h; sourceTree = "<group>"; };
+		A2D009371C369AEF00903003 /* MathUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MathUtils.cpp; sourceTree = "<group>"; };
+		A2D009381C369AEF00903003 /* MathUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MathUtils.h; sourceTree = "<group>"; };
+		A2D009391C369AEF00903003 /* MeshUtils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MeshUtils.cpp; sourceTree = "<group>"; };
+		A2D0093A1C369AEF00903003 /* MeshUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MeshUtils.h; sourceTree = "<group>"; };
+		A2D0093B1C369AEF00903003 /* Scene.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Scene.cpp; sourceTree = "<group>"; };
+		A2D0093C1C369AEF00903003 /* Scene.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Scene.h; sourceTree = "<group>"; };
+		A2D0093D1C369AEF00903003 /* SceneQuat.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SceneQuat.cpp; sourceTree = "<group>"; };
+		A2D0093E1C369AEF00903003 /* SceneQuat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SceneQuat.h; sourceTree = "<group>"; };
+		A2D0093F1C369AEF00903003 /* Utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Utils.cpp; sourceTree = "<group>"; };
+		A2D009401C369AEF00903003 /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Utils.h; sourceTree = "<group>"; };
+		A2D009411C369AEF00903003 /* View.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = View.cpp; sourceTree = "<group>"; };
+		A2D009421C369AEF00903003 /* View.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = View.h; sourceTree = "<group>"; };
+		A2D009431C369AEF00903003 /* ViewAxis.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ViewAxis.cpp; sourceTree = "<group>"; };
+		A2D009441C369AEF00903003 /* ViewAxis.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ViewAxis.h; sourceTree = "<group>"; };
+		A2D009451C369AEF00903003 /* ViewBlur.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ViewBlur.cpp; sourceTree = "<group>"; };
+		A2D009461C369AEF00903003 /* ViewBlur.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ViewBlur.h; sourceTree = "<group>"; };
+		A2D009471C369AEF00903003 /* ViewCopy.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ViewCopy.cpp; sourceTree = "<group>"; };
+		A2D009481C369AEF00903003 /* ViewCopy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ViewCopy.h; sourceTree = "<group>"; };
+		A2D009491C369AEF00903003 /* ViewDotPlane.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ViewDotPlane.cpp; sourceTree = "<group>"; };
+		A2D0094A1C369AEF00903003 /* ViewDotPlane.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ViewDotPlane.h; sourceTree = "<group>"; };
+		A2D0094B1C369AEF00903003 /* SceneApp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SceneApp.cpp; path = ../src/SceneApp.cpp; sourceTree = "<group>"; };
+		A2D0094C1C369AEF00903003 /* SceneApp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SceneApp.h; path = ../src/SceneApp.h; sourceTree = "<group>"; };
+		AF53CFF386834808985650DB /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = System/Library/Frameworks/QuickTime.framework; sourceTree = SDKROOT; };
+		C14ADAAD35624ABAA39AA23F /* CinderApp.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = CinderApp.icns; path = ../resources/CinderApp.icns; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8D11072E0486CEB800E47090 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */,
+				0091D8F90E81B9330029341E /* OpenGL.framework in Frameworks */,
+				5323E6B20EAFCA74003A9687 /* CoreVideo.framework in Frameworks */,
+				5323E6B60EAFCA7E003A9687 /* QTKit.framework in Frameworks */,
+				00B784B30FF439BC000DE1D7 /* Accelerate.framework in Frameworks */,
+				00B784B40FF439BC000DE1D7 /* AudioToolbox.framework in Frameworks */,
+				00B784B50FF439BC000DE1D7 /* AudioUnit.framework in Frameworks */,
+				00B784B60FF439BC000DE1D7 /* CoreAudio.framework in Frameworks */,
+				A47436873C0B464DB3D22117 /* QuickTime.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		01B97315FEAEA392516A2CEA /* Blocks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Blocks;
+			sourceTree = "<group>";
+		};
+		080E96DDFE201D6D7F000001 /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				437AC632881140939335B2A1 /* FourSeasons01App.cpp */,
+				A2D0092F1C369AEF00903003 /* bongiovi */,
+				A2D0094B1C369AEF00903003 /* SceneApp.cpp */,
+				A2D0094C1C369AEF00903003 /* SceneApp.h */,
+			);
+			name = Source;
+			sourceTree = "<group>";
+		};
+		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				00B784AF0FF439BC000DE1D7 /* Accelerate.framework */,
+				00B784B00FF439BC000DE1D7 /* AudioToolbox.framework */,
+				00B784B10FF439BC000DE1D7 /* AudioUnit.framework */,
+				00B784B20FF439BC000DE1D7 /* CoreAudio.framework */,
+				5323E6B50EAFCA7E003A9687 /* QTKit.framework */,
+				5323E6B10EAFCA74003A9687 /* CoreVideo.framework */,
+				0091D8F80E81B9330029341E /* OpenGL.framework */,
+				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
+			);
+			name = "Linked Frameworks";
+			sourceTree = "<group>";
+		};
+		1058C7A2FEA54F0111CA2CBB /* Other Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				29B97324FDCFA39411CA2CEA /* AppKit.framework */,
+				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
+			);
+			name = "Other Frameworks";
+			sourceTree = "<group>";
+		};
+		19C28FACFE9D520D11CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8D1107320486CEB800E47090 /* FourSeasons01.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		29B97314FDCFA39411CA2CEA /* FourSeasons01 */ = {
+			isa = PBXGroup;
+			children = (
+				01B97315FEAEA392516A2CEA /* Blocks */,
+				29B97315FDCFA39411CA2CEA /* Headers */,
+				080E96DDFE201D6D7F000001 /* Source */,
+				29B97317FDCFA39411CA2CEA /* Resources */,
+				29B97323FDCFA39411CA2CEA /* Frameworks */,
+				19C28FACFE9D520D11CA2CBB /* Products */,
+			);
+			name = FourSeasons01;
+			sourceTree = "<group>";
+		};
+		29B97315FDCFA39411CA2CEA /* Headers */ = {
+			isa = PBXGroup;
+			children = (
+				88089C9CA2D0485999521C2F /* Resources.h */,
+				94B8A9EF3F0E4DEA9E476DBC /* FourSeasons01_Prefix.pch */,
+			);
+			name = Headers;
+			sourceTree = "<group>";
+		};
+		29B97317FDCFA39411CA2CEA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A2D0092B1C369AE300903003 /* images */,
+				A2D0092C1C369AE300903003 /* shaders */,
+				C14ADAAD35624ABAA39AA23F /* CinderApp.icns */,
+				6BDB1706DE3B4483A5B63C19 /* Info.plist */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */,
+				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
+				AF53CFF386834808985650DB /* QuickTime.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A2D0092F1C369AEF00903003 /* bongiovi */ = {
+			isa = PBXGroup;
+			children = (
+				A2D009301C369AEF00903003 /* BitmapUtils.cpp */,
+				A2D009311C369AEF00903003 /* BitmapUtils.h */,
+				A2D009321C369AEF00903003 /* CameraControl.cpp */,
+				A2D009331C369AEF00903003 /* CameraControl.h */,
+				A2D009341C369AEF00903003 /* EaseNumber.h */,
+				A2D009351C369AEF00903003 /* EffectComposer.cpp */,
+				A2D009361C369AEF00903003 /* EffectComposer.h */,
+				A2D009371C369AEF00903003 /* MathUtils.cpp */,
+				A2D009381C369AEF00903003 /* MathUtils.h */,
+				A2D009391C369AEF00903003 /* MeshUtils.cpp */,
+				A2D0093A1C369AEF00903003 /* MeshUtils.h */,
+				A2D0093B1C369AEF00903003 /* Scene.cpp */,
+				A2D0093C1C369AEF00903003 /* Scene.h */,
+				A2D0093D1C369AEF00903003 /* SceneQuat.cpp */,
+				A2D0093E1C369AEF00903003 /* SceneQuat.h */,
+				A2D0093F1C369AEF00903003 /* Utils.cpp */,
+				A2D009401C369AEF00903003 /* Utils.h */,
+				A2D009411C369AEF00903003 /* View.cpp */,
+				A2D009421C369AEF00903003 /* View.h */,
+				A2D009431C369AEF00903003 /* ViewAxis.cpp */,
+				A2D009441C369AEF00903003 /* ViewAxis.h */,
+				A2D009451C369AEF00903003 /* ViewBlur.cpp */,
+				A2D009461C369AEF00903003 /* ViewBlur.h */,
+				A2D009471C369AEF00903003 /* ViewCopy.cpp */,
+				A2D009481C369AEF00903003 /* ViewCopy.h */,
+				A2D009491C369AEF00903003 /* ViewDotPlane.cpp */,
+				A2D0094A1C369AEF00903003 /* ViewDotPlane.h */,
+			);
+			name = bongiovi;
+			path = ../src/bongiovi;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8D1107260486CEB800E47090 /* FourSeasons01 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "FourSeasons01" */;
+			buildPhases = (
+				8D1107290486CEB800E47090 /* Resources */,
+				8D11072C0486CEB800E47090 /* Sources */,
+				8D11072E0486CEB800E47090 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FourSeasons01;
+			productInstallPath = "$(HOME)/Applications";
+			productName = FourSeasons01;
+			productReference = 8D1107320486CEB800E47090 /* FourSeasons01.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		29B97313FDCFA39411CA2CEA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+			};
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "FourSeasons01" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 29B97314FDCFA39411CA2CEA /* FourSeasons01 */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8D1107260486CEB800E47090 /* FourSeasons01 */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8D1107290486CEB800E47090 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A2D0092E1C369AE300903003 /* shaders in Resources */,
+				A2D0092D1C369AE300903003 /* images in Resources */,
+				C8A89FDF99A94557AD574B0D /* CinderApp.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8D11072C0486CEB800E47090 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A2D009511C369AEF00903003 /* MeshUtils.cpp in Sources */,
+				A2D009571C369AEF00903003 /* ViewBlur.cpp in Sources */,
+				A2D009521C369AEF00903003 /* Scene.cpp in Sources */,
+				A2D0095A1C369AEF00903003 /* SceneApp.cpp in Sources */,
+				A2D009561C369AEF00903003 /* ViewAxis.cpp in Sources */,
+				A2D0094F1C369AEF00903003 /* EffectComposer.cpp in Sources */,
+				A2D0094E1C369AEF00903003 /* CameraControl.cpp in Sources */,
+				A2D009551C369AEF00903003 /* View.cpp in Sources */,
+				A2D009541C369AEF00903003 /* Utils.cpp in Sources */,
+				A2D0094D1C369AEF00903003 /* BitmapUtils.cpp in Sources */,
+				A2D009501C369AEF00903003 /* MathUtils.cpp in Sources */,
+				A2D009581C369AEF00903003 /* ViewCopy.cpp in Sources */,
+				21F48F8B4E0E48A18A637AED /* FourSeasons01App.cpp in Sources */,
+				A2D009531C369AEF00903003 /* SceneQuat.cpp in Sources */,
+				A2D009591C369AEF00903003 /* ViewDotPlane.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		C01FCF4B08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = FourSeasons01_Prefix.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				OTHER_LDFLAGS = "\"$(CINDER_PATH)/lib/libcinder_d.a\"";
+				PRODUCT_NAME = FourSeasons01;
+				SYMROOT = ./build;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		C01FCF4C08A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_FAST_MATH = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = FourSeasons01_Prefix.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"NDEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				OTHER_LDFLAGS = "\"$(CINDER_PATH)/lib/libcinder.a\"";
+				PRODUCT_NAME = FourSeasons01;
+				STRIP_INSTALLED_PRODUCT = YES;
+				SYMROOT = ./build;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+		C01FCF4F08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = i386;
+				CINDER_PATH = ../../../../../../../../Users/wen/Development/cinder;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/boost\"";
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				SDKROOT = macosx;
+				USER_HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/include\" ../include ../blocks/QuickTime/include";
+			};
+			name = Debug;
+		};
+		C01FCF5008A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = i386;
+				CINDER_PATH = ../../../../../../../../Users/wen/Development/cinder;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/boost\"";
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				SDKROOT = macosx;
+				USER_HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/include\" ../include ../blocks/QuickTime/include";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C01FCF4A08A954540054247B /* Build configuration list for PBXNativeTarget "FourSeasons01" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4B08A954540054247B /* Debug */,
+				C01FCF4C08A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "FourSeasons01" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4F08A954540054247B /* Debug */,
+				C01FCF5008A954540054247B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
+}

@@ -106,9 +106,10 @@ void main(void) {
 
 
 			float posOffset = noiseOffset * mix(extras.r , 1.0, noiseDifference);
-			float ax = snoise(pos.x*posOffset + time, pos.y*posOffset + time, pos.z*posOffset + time) + .35;
-			float ay = snoise(pos.y*posOffset + time, pos.z*posOffset + time, pos.x*posOffset + time) + .2;
-			float az = snoise(pos.z*posOffset + time, pos.x*posOffset + time, pos.y*posOffset + time);
+			float xyScale = .5;
+			float ax = snoise(pos.x*posOffset + time, pos.y*posOffset + time, pos.z*posOffset + time) * xyScale + .35;
+			float ay = snoise(pos.y*posOffset + time, pos.z*posOffset + time, pos.x*posOffset + time) + .3;
+			float az = snoise(pos.z*posOffset + time, pos.x*posOffset + time, pos.y*posOffset + time) * xyScale;
 
 			float windStrength = windSpeed * (mix(extras.g, 1.0, .5) + .01);
 			vel += vec3(ax, ay, az) * windStrength;
