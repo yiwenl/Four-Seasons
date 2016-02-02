@@ -1,7 +1,651 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+'use strict';
+
+module.exports = (function() {
+    try {
+        return !!new Blob();
+    } catch (e) {
+        return false;
+    }
+}());
+
+},{}],2:[function(require,module,exports){
+'use strict';
+
+var EventEmitter = require('events').EventEmitter;
+
+function Emitter() {
+    EventEmitter.call(this);
+    this.setMaxListeners(20);
+}
+
+Emitter.prototype = Object.create(EventEmitter.prototype);
+Emitter.prototype.constructor = Emitter;
+
+Emitter.prototype.off = function(type, listener) {
+    if (listener) {
+        return this.removeListener(type, listener);
+    }
+    if (type) {
+        return this.removeAllListeners(type);
+    }
+    return this.removeAllListeners();
+};
+
+module.exports = Emitter;
+
+},{"events":10}],3:[function(require,module,exports){
+'use strict';
+
+var Emitter = require('./emitter.js');
+var createLoader = require('./loader');
+var autoId = 0;
+
+module.exports = function createGroup(config) {
+    var group;
+    var map = {};
+    var assets = [];
+    var queue = [];
+    var numLoaded = 0;
+    var numTotal = 0;
+    var loaders = {};
+
+    var add = function(options) {
+        // console.debug('add', options);
+        if (Array.isArray(options)) {
+            options.forEach(add);
+            return group;
+        }
+        var isGroup = !!options.assets && Array.isArray(options.assets);
+        // console.debug('isGroup', isGroup);
+        var loader;
+        if (isGroup) {
+            loader = createGroup(configure(options, config));
+        } else {
+            loader = createLoader(configure(options, config));
+        }
+        loader.once('destroy', destroyHandler);
+        queue.push(loader);
+        loaders[loader.id] = loader;
+        return group;
+    };
+
+    var get = function(id) {
+        if (!arguments.length) {
+            return assets;
+        }
+        return map[id];
+    };
+
+    var find = function(id) {
+        if (get(id)) {
+            return get(id);
+        }
+        var found = null;
+        // assets.filter(function(asset) {
+        //     return asset.type === 'group';
+        // }).map(function(asset) {
+        //     return loaders[asset.id];
+        // }).some(function(loader) {
+        //     found = loader.find(id);
+        //     return !!found;
+        // });
+        Object.keys(loaders).some(function(key) {
+            found = loaders[key].find && loaders[key].find(id);
+            return !!found;
+        });
+        return found;
+    };
+
+    var getExtension = function(url) {
+        return url && url.split('?')[0].split('.').pop().toLowerCase();
+    };
+
+    var configure = function(options, defaults) {
+        if (typeof options === 'string') {
+            var url = options;
+            options = {
+                url: url
+            };
+        }
+
+        if (options.isTouchLocked === undefined) {
+            options.isTouchLocked = defaults.isTouchLocked;
+        }
+
+        if (options.blob === undefined) {
+            options.blob = defaults.blob;
+        }
+
+        if (options.basePath === undefined) {
+            options.basePath = defaults.basePath;
+        }
+
+        options.id = options.id || options.url || String(++autoId);
+        options.type = options.type || getExtension(options.url);
+        options.crossOrigin = options.crossOrigin || defaults.crossOrigin;
+        options.webAudioContext = options.webAudioContext || defaults.webAudioContext;
+        options.log = defaults.log;
+
+        return options;
+    };
+
+    var start = function() {
+        numTotal = queue.length;
+
+        queue.forEach(function(loader) {
+            loader
+                .on('progress', progressHandler)
+                .once('complete', completeHandler)
+                .once('error', errorHandler)
+                .start();
+        });
+
+        queue = [];
+
+        return group;
+    };
+
+    var progressHandler = function(progress) {
+        var loaded = numLoaded + progress;
+        group.emit('progress', loaded / numTotal);
+    };
+
+    var completeHandler = function(asset, id, type) {
+        if (Array.isArray(asset)) {
+            asset = { id: id, file: asset, type: type };
+        }
+        numLoaded++;
+        group.emit('progress', numLoaded / numTotal);
+        map[asset.id] = asset.file;
+        assets.push(asset);
+        group.emit('childcomplete', asset);
+        checkComplete();
+    };
+
+    var errorHandler = function(err) {
+        numTotal--;
+        if (group.listeners('error').length) {
+            group.emit('error', err);
+        } else {
+            console.error(err);
+        }
+        checkComplete();
+    };
+
+    var destroyHandler = function(id) {
+        loaders[id] = null;
+        delete loaders[id];
+
+        map[id] = null;
+        delete map[id];
+
+        assets.some(function(asset, i) {
+            if (asset.id === id) {
+                assets.splice(i, 1);
+                return true;
+            }
+        });
+    };
+
+    var checkComplete = function() {
+        if (numLoaded >= numTotal) {
+            group.emit('complete', assets, config.id, 'group');
+        }
+    };
+
+    var destroy = function() {
+        while (queue.length) {
+            queue.pop().destroy();
+        }
+        group.off('error');
+        group.off('progress');
+        group.off('complete');
+        assets = [];
+        map = {};
+        config.webAudioContext = null;
+        numTotal = 0;
+        numLoaded = 0;
+
+        Object.keys(loaders).forEach(function(key) {
+            loaders[key].destroy();
+        });
+        loaders = {};
+
+        group.emit('destroy', group.id);
+
+        return group;
+    };
+
+    // emits: progress, error, complete, destroy
+
+    group = Object.create(Emitter.prototype, {
+        _events: {
+            value: {}
+        },
+        id: {
+            get: function() {
+                return config.id;
+            }
+        },
+        add: {
+            value: add
+        },
+        start: {
+            value: start
+        },
+        get: {
+            value: get
+        },
+        find: {
+            value: find
+        },
+        getLoader: {
+            value: function(id) {
+                return loaders[id];
+            }
+        },
+        loaded: {
+            get: function() {
+                return numLoaded >= numTotal;
+            }
+        },
+        file: {
+            get: function() {
+                return assets;
+            }
+        },
+        destroy: {
+            value: destroy
+        }
+    });
+
+    config = configure(config || {}, {
+        basePath: '',
+        blob: false,
+        touchLocked: false,
+        crossOrigin: null,
+        webAudioContext: null,
+        log: false
+    });
+
+    if (Array.isArray(config.assets)) {
+        add(config.assets);
+    }
+
+    return Object.freeze(group);
+};
+
+},{"./emitter.js":2,"./loader":5}],4:[function(require,module,exports){
+'use strict';
+
+var assetsLoader = require('./group');
+assetsLoader.stats = require('./stats');
+
+module.exports = assetsLoader;
+
+},{"./group":3,"./stats":6}],5:[function(require,module,exports){
+'use strict';
+
+var Emitter = require('./emitter.js');
+var browserHasBlob = require('./browser-has-blob.js');
+var stats = require('./stats');
+
+module.exports = function(options) {
+    var id = options.id;
+    var basePath = options.basePath || '';
+    var url = options.url;
+    var type = options.type;
+    var crossOrigin = options.crossOrigin;
+    var isTouchLocked = options.isTouchLocked;
+    var blob = options.blob && browserHasBlob;
+    var webAudioContext = options.webAudioContext;
+    var log = options.log;
+
+    var loader;
+    var loadHandler;
+    var request;
+    var startTime;
+    var timeout;
+    var file;
+
+    var start = function() {
+        startTime = Date.now();
+
+        switch (type) {
+            case 'json':
+                loadJSON();
+                break;
+            case 'jpg':
+            case 'png':
+            case 'gif':
+            case 'webp':
+                loadImage();
+                break;
+            case 'mp3':
+            case 'ogg':
+            case 'opus':
+            case 'wav':
+            case 'm4a':
+                loadAudio();
+                break;
+            case 'ogv':
+            case 'mp4':
+            case 'webm':
+            case 'hls':
+                loadVideo();
+                break;
+            case 'bin':
+            case 'binary':
+                loadXHR('arraybuffer');
+                break;
+            case 'txt':
+            case 'text':
+                loadXHR('text');
+                break;
+            default:
+                throw 'AssetsLoader ERROR: Unknown type for file with URL: ' + basePath + url + ' (' + type + ')';
+        }
+    };
+
+    var dispatchComplete = function(data) {
+        if (!data) {
+            return;
+        }
+        file = {id: id, file: data, type: type};
+        loader.emit('progress', 1);
+        loader.emit('complete', file, id, type);
+        removeListeners();
+    };
+
+    var loadXHR = function(responseType, customLoadHandler) {
+        loadHandler = customLoadHandler || completeHandler;
+
+        request = new XMLHttpRequest();
+        request.open('GET', basePath + url, true);
+        request.responseType = responseType;
+        request.addEventListener('progress', progressHandler);
+        request.addEventListener('load', loadHandler);
+        request.addEventListener('error', errorHandler);
+        request.send();
+    };
+
+    var progressHandler = function(event) {
+        if (event.lengthComputable) {
+            loader.emit('progress', event.loaded / event.total);
+        }
+    };
+
+    var completeHandler = function() {
+        if (success()) {
+            dispatchComplete(request.response);
+        }
+    };
+
+    var success = function() {
+        if (request && request.status < 400) {
+            stats.update(request, startTime, url, log);
+            return true;
+        }
+        errorHandler(request && request.statusText);
+        return false;
+    };
+
+    // json
+
+    var loadJSON = function() {
+        loadXHR('json', function() {
+            if (success()) {
+                var data = request.response;
+                if (typeof data === 'string') {
+                    data = JSON.parse(data);
+                }
+                dispatchComplete(data);
+            }
+        });
+    };
+
+    // image
+
+    var loadImage = function() {
+        if (blob) {
+            loadImageBlob();
+        } else {
+            loadImageElement();
+        }
+    };
+
+    var loadImageElement = function() {
+        request = new Image();
+        if (crossOrigin) {
+            request.crossOrigin = 'anonymous';
+        }
+        request.addEventListener('error', errorHandler, false);
+        request.addEventListener('load', elementLoadHandler, false);
+        request.src = basePath + url;
+    };
+
+    var elementLoadHandler = function() {
+        window.clearTimeout(timeout);
+        dispatchComplete(request);
+    };
+
+    var loadImageBlob = function() {
+        loadXHR('blob', function() {
+            if (success()) {
+                request = new Image();
+                request.addEventListener('error', errorHandler, false);
+                request.addEventListener('load', imageBlobHandler, false);
+                request.src = window.URL.createObjectURL(request.response);
+            }
+        });
+    };
+
+    var imageBlobHandler = function() {
+        window.URL.revokeObjectURL(request.src);
+        dispatchComplete(request);
+    };
+
+    // audio
+
+    var loadAudio = function() {
+        if (webAudioContext) {
+            loadAudioBuffer();
+        } else {
+            loadMediaElement('audio');
+        }
+    };
+
+    // video
+
+    var loadVideo = function() {
+        if (blob) {
+            loadXHR('blob');
+        } else {
+            loadMediaElement('video');
+        }
+    };
+
+    // audio buffer
+
+    var loadAudioBuffer = function() {
+        loadXHR('arraybuffer', function() {
+            if (success()) {
+                webAudioContext.decodeAudioData(
+                    request.response,
+                    function(buffer) {
+                        request = null;
+                        dispatchComplete(buffer);
+                    },
+                    function(e) {
+                        errorHandler(e);
+                    }
+                );
+            }
+        });
+    };
+
+    // media element
+
+    var loadMediaElement = function(tagName) {
+        request = document.createElement(tagName);
+
+        if (!isTouchLocked) {
+            // timeout because sometimes canplaythrough doesn't fire
+            window.clearTimeout(timeout);
+            timeout = window.setTimeout(elementLoadHandler, 2000);
+            request.addEventListener('canplaythrough', elementLoadHandler, false);
+        }
+
+        request.addEventListener('error', errorHandler, false);
+        request.preload = 'auto';
+        request.src = basePath + url;
+        request.load();
+
+        if (isTouchLocked) {
+            dispatchComplete(request);
+        }
+    };
+
+    // error
+
+    var errorHandler = function(err) {
+        window.clearTimeout(timeout);
+
+        var message = err;
+
+        if (request && request.tagName && request.error) {
+            var ERROR_STATE = ['', 'ABORTED', 'NETWORK', 'DECODE', 'SRC_NOT_SUPPORTED'];
+            message = 'MediaError: ' + ERROR_STATE[request.error.code] + ' ' + request.src;
+        } else if (request && request.statusText) {
+            message = request.statusText;
+        } else if (err && err.message) {
+            message = err.message;
+        } else if (err && err.type) {
+            message = err.type;
+        }
+
+        loader.emit('error', 'Error loading "' + basePath + url + '" ' + message);
+
+        destroy();
+    };
+
+    // clean up
+
+    var removeListeners = function() {
+        loader.off('error');
+        loader.off('progress');
+        loader.off('complete');
+
+        if (request) {
+            request.removeEventListener('progress', progressHandler);
+            request.removeEventListener('load', loadHandler);
+            request.removeEventListener('error', errorHandler);
+            request.removeEventListener('load', elementLoadHandler);
+            request.removeEventListener('canplaythrough', elementLoadHandler);
+            request.removeEventListener('load', imageBlobHandler);
+        }
+    };
+
+    var destroy = function() {
+        removeListeners();
+
+        if (request && request.abort && request.readyState < 4) {
+            request.abort();
+        }
+
+        request = null;
+        webAudioContext = null;
+        file = null;
+
+        window.clearTimeout(timeout);
+
+        loader.emit('destroy', id);
+    };
+
+    // emits: progress, error, complete
+
+    loader = Object.create(Emitter.prototype, {
+        _events: {
+            value: {}
+        },
+        id: {
+            value: options.id
+        },
+        start: {
+            value: start
+        },
+        loaded: {
+            get: function() {
+                return !!file;
+            }
+        },
+        file: {
+            get: function() {
+                return file;
+            }
+        },
+        destroy: {
+            value: destroy
+        }
+    });
+
+    return Object.freeze(loader);
+};
+
+},{"./browser-has-blob.js":1,"./emitter.js":2,"./stats":6}],6:[function(require,module,exports){
+'use strict';
+
+module.exports = {
+    mbs: 0,
+    secs: 0,
+    update: function(request, startTime, url, log) {
+        var length;
+        var headers = request.getAllResponseHeaders();
+        if (headers) {
+            var match = headers.match(/content-length: (\d+)/i);
+            if (match && match.length) {
+                length = match[1];
+            }
+        }
+        // var length = request.getResponseHeader('Content-Length');
+        if (length) {
+            length = parseInt(length, 10);
+            var mbs = length / 1024 / 1024;
+            var secs = (Date.now() - startTime) / 1000;
+            this.secs += secs;
+            this.mbs += mbs;
+            if (log) {
+                this.log(url, mbs, secs);
+            }
+        } else if(log) {
+            console.warn.call(console, 'Can\'t get Content-Length:', url);
+        }
+    },
+    log: function(url, mbs, secs) {
+        if (url) {
+            var file = 'File loaded: ' +
+                url.substr(url.lastIndexOf('/') + 1) +
+                ' size:' + mbs.toFixed(2) + 'mb' +
+                ' time:' + secs.toFixed(2) + 's' +
+                ' speed:' + (mbs / secs).toFixed(2) + 'mbps';
+
+            console.log.call(console, file);
+        }
+        var total = 'Total loaded: ' + this.mbs.toFixed(2) + 'mb' +
+            ' time:' + this.secs.toFixed(2) + 's' +
+            ' speed:' + this.getMbps().toFixed(2) + 'mbps';
+        console.log.call(console, total);
+    },
+    getMbps: function() {
+        return this.mbs / this.secs;
+    }
+};
+
+},{}],7:[function(require,module,exports){
 module.exports = require('./vendor/dat.gui')
 module.exports.color = require('./vendor/dat.color')
-},{"./vendor/dat.color":2,"./vendor/dat.gui":3}],2:[function(require,module,exports){
+},{"./vendor/dat.color":8,"./vendor/dat.gui":9}],8:[function(require,module,exports){
 /**
  * dat-gui JavaScript Controller Library
  * http://code.google.com/p/dat-gui
@@ -757,7 +1401,7 @@ dat.color.math = (function () {
 })(),
 dat.color.toString,
 dat.utils.common);
-},{}],3:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /**
  * dat-gui JavaScript Controller Library
  * http://code.google.com/p/dat-gui
@@ -4418,7 +5062,307 @@ dat.dom.CenteredDiv = (function (dom, common) {
 dat.utils.common),
 dat.dom.dom,
 dat.utils.common);
-},{}],4:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+function EventEmitter() {
+  this._events = this._events || {};
+  this._maxListeners = this._maxListeners || undefined;
+}
+module.exports = EventEmitter;
+
+// Backwards-compat with node 0.10.x
+EventEmitter.EventEmitter = EventEmitter;
+
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined;
+
+// By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+EventEmitter.defaultMaxListeners = 10;
+
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+EventEmitter.prototype.setMaxListeners = function(n) {
+  if (!isNumber(n) || n < 0 || isNaN(n))
+    throw TypeError('n must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+EventEmitter.prototype.emit = function(type) {
+  var er, handler, len, args, i, listeners;
+
+  if (!this._events)
+    this._events = {};
+
+  // If there is no 'error' event listener then throw.
+  if (type === 'error') {
+    if (!this._events.error ||
+        (isObject(this._events.error) && !this._events.error.length)) {
+      er = arguments[1];
+      if (er instanceof Error) {
+        throw er; // Unhandled 'error' event
+      }
+      throw TypeError('Uncaught, unspecified "error" event.');
+    }
+  }
+
+  handler = this._events[type];
+
+  if (isUndefined(handler))
+    return false;
+
+  if (isFunction(handler)) {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        args = Array.prototype.slice.call(arguments, 1);
+        handler.apply(this, args);
+    }
+  } else if (isObject(handler)) {
+    args = Array.prototype.slice.call(arguments, 1);
+    listeners = handler.slice();
+    len = listeners.length;
+    for (i = 0; i < len; i++)
+      listeners[i].apply(this, args);
+  }
+
+  return true;
+};
+
+EventEmitter.prototype.addListener = function(type, listener) {
+  var m;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events)
+    this._events = {};
+
+  // To avoid recursion in the case that type === "newListener"! Before
+  // adding it to the listeners, first emit "newListener".
+  if (this._events.newListener)
+    this.emit('newListener', type,
+              isFunction(listener.listener) ?
+              listener.listener : listener);
+
+  if (!this._events[type])
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  else if (isObject(this._events[type]))
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+  else
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+
+  // Check for listener leak
+  if (isObject(this._events[type]) && !this._events[type].warned) {
+    if (!isUndefined(this._maxListeners)) {
+      m = this._maxListeners;
+    } else {
+      m = EventEmitter.defaultMaxListeners;
+    }
+
+    if (m && m > 0 && this._events[type].length > m) {
+      this._events[type].warned = true;
+      console.error('(node) warning: possible EventEmitter memory ' +
+                    'leak detected. %d listeners added. ' +
+                    'Use emitter.setMaxListeners() to increase limit.',
+                    this._events[type].length);
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
+    }
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener) {
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  var fired = false;
+
+  function g() {
+    this.removeListener(type, g);
+
+    if (!fired) {
+      fired = true;
+      listener.apply(this, arguments);
+    }
+  }
+
+  g.listener = listener;
+  this.on(type, g);
+
+  return this;
+};
+
+// emits a 'removeListener' event iff the listener was removed
+EventEmitter.prototype.removeListener = function(type, listener) {
+  var list, position, length, i;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events || !this._events[type])
+    return this;
+
+  list = this._events[type];
+  length = list.length;
+  position = -1;
+
+  if (list === listener ||
+      (isFunction(list.listener) && list.listener === listener)) {
+    delete this._events[type];
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+
+  } else if (isObject(list)) {
+    for (i = length; i-- > 0;) {
+      if (list[i] === listener ||
+          (list[i].listener && list[i].listener === listener)) {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0)
+      return this;
+
+    if (list.length === 1) {
+      list.length = 0;
+      delete this._events[type];
+    } else {
+      list.splice(position, 1);
+    }
+
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  var key, listeners;
+
+  if (!this._events)
+    return this;
+
+  // not listening for removeListener, no need to emit
+  if (!this._events.removeListener) {
+    if (arguments.length === 0)
+      this._events = {};
+    else if (this._events[type])
+      delete this._events[type];
+    return this;
+  }
+
+  // emit removeListener for all listeners on all events
+  if (arguments.length === 0) {
+    for (key in this._events) {
+      if (key === 'removeListener') continue;
+      this.removeAllListeners(key);
+    }
+    this.removeAllListeners('removeListener');
+    this._events = {};
+    return this;
+  }
+
+  listeners = this._events[type];
+
+  if (isFunction(listeners)) {
+    this.removeListener(type, listeners);
+  } else if (listeners) {
+    // LIFO order
+    while (listeners.length)
+      this.removeListener(type, listeners[listeners.length - 1]);
+  }
+  delete this._events[type];
+
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  var ret;
+  if (!this._events || !this._events[type])
+    ret = [];
+  else if (isFunction(this._events[type]))
+    ret = [this._events[type]];
+  else
+    ret = this._events[type].slice();
+  return ret;
+};
+
+EventEmitter.prototype.listenerCount = function(type) {
+  if (this._events) {
+    var evlistener = this._events[type];
+
+    if (isFunction(evlistener))
+      return 1;
+    else if (evlistener)
+      return evlistener.length;
+  }
+  return 0;
+};
+
+EventEmitter.listenerCount = function(emitter, type) {
+  return emitter.listenerCount(type);
+};
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+
+},{}],11:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -4443,6 +5387,14 @@ var _ViewSimulation = require('./ViewSimulation');
 
 var _ViewSimulation2 = _interopRequireDefault(_ViewSimulation);
 
+var _ViewSkybox = require('./ViewSkybox');
+
+var _ViewSkybox2 = _interopRequireDefault(_ViewSkybox);
+
+var _ViewTree = require('./ViewTree');
+
+var _ViewTree2 = _interopRequireDefault(_ViewTree);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -4466,6 +5418,14 @@ var SceneApp = function (_alfrid$Scene) {
 
 		_this.orbitalControl._rx.value = .3;
 		_this._count = 0;
+
+		_this.cameraSkybox = new _alfrid2.default.CameraPerspective();
+		_this.camera.setPerspective(90 * Math.PI / 180, GL.aspectRatio, .1, 1000);
+		_this.cameraSkybox.setPerspective(90 * Math.PI / 180, GL.aspectRatio, .1, 1000);
+		var ctrl = new _alfrid2.default.OrbitalControl(_this.cameraSkybox, window, 1.1);
+		ctrl.lockZoom(true);
+
+		ctrl.center[1] = _this.orbitalControl.center[1] = 3;
 		return _this;
 	}
 
@@ -4482,6 +5442,34 @@ var SceneApp = function (_alfrid$Scene) {
 			};
 			this._fboCurrent = new _alfrid2.default.FrameBuffer(numParticles * 2, numParticles * 2, o);
 			this._fboTarget = new _alfrid2.default.FrameBuffer(numParticles * 2, numParticles * 2, o);
+
+			function getAsset(id) {
+				for (var i = 0; i < assets.length; i++) {
+					if (id === assets[i].id) {
+						return assets[i].file;
+					}
+				}
+			}
+
+			var irr_posx = _alfrid2.default.HDRLoader.parse(getAsset('irr_posx'));
+			var irr_negx = _alfrid2.default.HDRLoader.parse(getAsset('irr_negx'));
+			var irr_posy = _alfrid2.default.HDRLoader.parse(getAsset('irr_posy'));
+			var irr_negy = _alfrid2.default.HDRLoader.parse(getAsset('irr_negy'));
+			var irr_posz = _alfrid2.default.HDRLoader.parse(getAsset('irr_posz'));
+			var irr_negz = _alfrid2.default.HDRLoader.parse(getAsset('irr_negz'));
+
+			this._textureIrr = new _alfrid2.default.GLCubeTexture([irr_posx, irr_negx, irr_posy, irr_negy, irr_posz, irr_negz]);
+
+			var rad_posx = _alfrid2.default.HDRLoader.parse(getAsset('rad_posx'));
+			var rad_negx = _alfrid2.default.HDRLoader.parse(getAsset('rad_negx'));
+			var rad_posy = _alfrid2.default.HDRLoader.parse(getAsset('rad_posy'));
+			var rad_negy = _alfrid2.default.HDRLoader.parse(getAsset('rad_negy'));
+			var rad_posz = _alfrid2.default.HDRLoader.parse(getAsset('rad_posz'));
+			var rad_negz = _alfrid2.default.HDRLoader.parse(getAsset('rad_negz'));
+
+			this._textureRad = new _alfrid2.default.GLCubeTexture([rad_posx, rad_negx, rad_posy, rad_negy, rad_posz, rad_negz]);
+
+			this._textureGradient = new _alfrid2.default.GLCubeTexture([getAsset('posx'), getAsset('negx'), getAsset('posy'), getAsset('negy'), getAsset('posz'), getAsset('negz')]);
 		}
 	}, {
 		key: '_initViews',
@@ -4493,6 +5481,8 @@ var SceneApp = function (_alfrid$Scene) {
 
 			this._vRender = new _ViewRender2.default();
 			this._vSim = new _ViewSimulation2.default();
+			this._vSkybox = new _ViewSkybox2.default();
+			this._vTree = new _ViewTree2.default();
 
 			//	SAVE INIT POSITIONS
 			this._vSave = new _ViewSave2.default();
@@ -4526,6 +5516,13 @@ var SceneApp = function (_alfrid$Scene) {
 	}, {
 		key: 'render',
 		value: function render() {
+			if (!this._vTree.mesh) {
+				return;
+			}
+			if (document.body.classList.contains('isLoading')) {
+				document.body.classList.remove('isLoading');
+			}
+
 			var p = 0;
 
 			if (this._count % params.skipCount === 0) {
@@ -4537,18 +5534,16 @@ var SceneApp = function (_alfrid$Scene) {
 
 			this.orbitalControl._ry.value += -.01;
 
+			GL.clear(0, 0, 0, 0);
+			GL.setMatrices(this.camera);
 			this._bAxis.draw();
 			this._bDotsPlane.draw();
 
 			this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), p);
+			this._vTree.render(this._textureRad, this._textureIrr);
 
-			GL.setMatrices(this.cameraOrtho);
-			GL.disable(GL.DEPTH_TEST);
-			var viewSize = this._fboCurrent.width / 2;
-			GL.viewport(0, 0, viewSize, viewSize);
-
-			// this._bCopy.draw(this._fboCurrent.getTexture());
-			GL.enable(GL.DEPTH_TEST);
+			// GL.setMatrices(this.cameraSkybox);
+			this._vSkybox.render(this._textureGradient);
 		}
 	}]);
 
@@ -4557,7 +5552,7 @@ var SceneApp = function (_alfrid$Scene) {
 
 exports.default = SceneApp;
 
-},{"./ViewRender":5,"./ViewSave":6,"./ViewSimulation":7,"./libs/alfrid.js":9}],5:[function(require,module,exports){
+},{"./ViewRender":12,"./ViewSave":13,"./ViewSimulation":14,"./ViewSkybox":15,"./ViewTree":16,"./libs/alfrid.js":18}],12:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -4635,7 +5630,7 @@ var ViewRender = function (_alfrid$View) {
 
 exports.default = ViewRender;
 
-},{"./libs/alfrid.js":9}],6:[function(require,module,exports){
+},{"./libs/alfrid.js":18}],13:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -4725,7 +5720,7 @@ var ViewSave = function (_alfrid$View) {
 
 exports.default = ViewSave;
 
-},{"./libs/alfrid.js":9}],7:[function(require,module,exports){
+},{"./libs/alfrid.js":18}],14:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -4789,7 +5784,141 @@ var ViewSimulation = function (_alfrid$View) {
 
 exports.default = ViewSimulation;
 
-},{"./libs/alfrid.js":9}],8:[function(require,module,exports){
+},{"./libs/alfrid.js":18}],15:[function(require,module,exports){
+'use strict';
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _alfrid = require('./libs/alfrid.js');
+
+var _alfrid2 = _interopRequireDefault(_alfrid);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; } // ViewSkybox.js
+
+var GL = _alfrid2.default.GL;
+
+
+var ViewSkybox = function (_alfrid$View) {
+	_inherits(ViewSkybox, _alfrid$View);
+
+	function ViewSkybox() {
+		_classCallCheck(this, ViewSkybox);
+
+		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewSkybox).call(this, "#define GLSLIFY 1\n// skybox.vert\n#define SHADER_NAME BASIC_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vVertex;\nvarying vec3 vCameraDir;\n\nvoid main(void) {\n\tgl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);\n\tvTextureCoord = aTextureCoord;\n\t\n\tvVertex = aVertexPosition;\n}", "#define GLSLIFY 1\n// skybox.frag\n\n#define SHADER_NAME BASIC_FRAGMENT\n\nprecision highp float;\n\nuniform samplerCube texture;\nuniform float\t\tuExposure;\nuniform float\t\tuGamma;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vVertex;\n\n// Filmic tonemapping from\n// http://filmicgames.com/archives/75\n\nconst float A = 0.15;\nconst float B = 0.50;\nconst float C = 0.10;\nconst float D = 0.20;\nconst float E = 0.02;\nconst float F = 0.30;\n\nvec3 Uncharted2Tonemap( vec3 x )\n{\n\treturn ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;\n}\n\nvoid main(void) {\n\tvec3 color   \t\t= textureCube(texture, vVertex).rgb;\n\n\t// color\t\t\t\t= Uncharted2Tonemap( color * uExposure );\n\t// // white balance\n\t// color\t\t\t\t= color * ( 1.0 / Uncharted2Tonemap( vec3( 20.0 ) ) );\n\t\n\t// // gamma correction\n\t// color\t\t\t\t= pow( color, vec3( 1.0 / uGamma ) );\n\n\tgl_FragColor = vec4(color, 1.0);\n}"));
+	}
+
+	_createClass(ViewSkybox, [{
+		key: '_init',
+		value: function _init() {
+			this.mesh = _alfrid2.default.Geom.skybox(16);
+		}
+	}, {
+		key: 'render',
+		value: function render(texture) {
+			this.shader.bind();
+			this.shader.uniform("texture", "uniform1i", 0);
+			this.shader.uniform("uExposure", "uniform1f", params.exposure);
+			this.shader.uniform("uGamma", "uniform1f", params.gamma);
+			this.shader.uniform("texture", "uniform1i", 0);
+			texture.bind(0);
+			GL.draw(this.mesh);
+		}
+	}]);
+
+	return ViewSkybox;
+}(_alfrid2.default.View);
+
+exports.default = ViewSkybox;
+
+},{"./libs/alfrid.js":18}],16:[function(require,module,exports){
+'use strict';
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _alfrid = require('./libs/alfrid.js');
+
+var _alfrid2 = _interopRequireDefault(_alfrid);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; } // ViewTree.js
+
+var GL = _alfrid2.default.GL;
+
+
+var ViewTree = function (_alfrid$View) {
+	_inherits(ViewTree, _alfrid$View);
+
+	function ViewTree() {
+		_classCallCheck(this, ViewTree);
+
+		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewTree).call(this, "#define GLSLIFY 1\n// reflection.vert\n\n#define SHADER_NAME REFLECTION_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat3 uNormalMatrix;\nuniform mat3 uModelViewMatrixInverse;\n\nvarying vec2 vTextureCoord;\n\nvarying vec3 vNormal;\nvarying vec3 vPosition;\nvarying vec3 vWsPosition;\nvarying vec3 vEyePosition;\nvarying vec3 vWsNormal;\n\nvarying vec3 vNormalWorldSpace;\nvarying vec3 vEyeDirWorldSpace;\n\nvoid main(void) {\n\tvec3 position \t\t\t= aVertexPosition * 8.0;\n\tvec4 worldSpacePosition\t= uModelMatrix * vec4(position, 1.0);\n    vec4 viewSpacePosition\t= uViewMatrix * worldSpacePosition;\n\t\n    vNormal\t\t\t\t\t= uNormalMatrix * aNormal;\n    vPosition\t\t\t\t= viewSpacePosition.xyz;\n\tvWsPosition\t\t\t\t= worldSpacePosition.xyz;\n\t\n\tvec4 eyeDirViewSpace\t= viewSpacePosition - vec4( 0, 0, 0, 1 );\n\tvEyePosition\t\t\t= -vec3( uModelViewMatrixInverse * eyeDirViewSpace.xyz );\n\tvWsNormal\t\t\t\t= normalize( uModelViewMatrixInverse * vNormal );\n\t\n    gl_Position\t\t\t\t= uProjectionMatrix * viewSpacePosition;\n\n\tvTextureCoord\t\t\t= aTextureCoord;\n\n\t//\ttest code\n\t// vec4 eyeDirViewSpace   = viewSpacePosition - vec4( 0, 0, 0, 1 );\n\tvEyeDirWorldSpace      = vec3( uModelViewMatrixInverse * eyeDirViewSpace.rgb );\n\tvec3 normalViewSpace   = uNormalMatrix * aNormal;\n\tvNormalWorldSpace      = normalize( vec3( vec4( normalViewSpace, 0 ) * uViewMatrix ) );\t\t\n}\n", "// pbr.frag\n\n#extension GL_EXT_shader_texture_lod : enable\n#define GLSLIFY 1\n\nprecision highp float;\n\nuniform samplerCube uRadianceMap;\nuniform samplerCube uIrradianceMap;\n\nuniform vec3\t\tuBaseColor;\nuniform float\t\tuRoughness;\nuniform float\t\tuRoughness4;\nuniform float\t\tuMetallic;\nuniform float\t\tuSpecular;\n\nuniform float\t\tuExposure;\nuniform float\t\tuGamma;\n\nvarying vec3        vNormal;\nvarying vec3        vPosition;\nvarying vec3\t\tvEyePosition;\nvarying vec3\t\tvWsNormal;\nvarying vec3\t\tvWsPosition;\n\nvarying vec3 vNormalWorldSpace;\nvarying vec3 vEyeDirWorldSpace;\n\n#define saturate(x) clamp(x, 0.0, 1.0)\n#define PI 3.1415926535897932384626433832795\n\n// Filmic tonemapping from\n// http://filmicgames.com/archives/75\n\nconst float A = 0.15;\nconst float B = 0.50;\nconst float C = 0.10;\nconst float D = 0.20;\nconst float E = 0.02;\nconst float F = 0.30;\n\nvec3 Uncharted2Tonemap( vec3 x )\n{\n\treturn ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;\n}\n\n// https://www.unrealengine.com/blog/physically-based-shading-on-mobile\nvec3 EnvBRDFApprox( vec3 SpecularColor, float Roughness, float NoV )\n{\n\tconst vec4 c0 = vec4( -1, -0.0275, -0.572, 0.022 );\n\tconst vec4 c1 = vec4( 1, 0.0425, 1.04, -0.04 );\n\tvec4 r = Roughness * c0 + c1;\n\tfloat a004 = min( r.x * r.x, exp2( -9.28 * NoV ) ) * r.x + r.y;\n\tvec2 AB = vec2( -1.04, 1.04 ) * a004 + r.zw;\n\treturn SpecularColor * AB.x + AB.y;\n}\n\n// http://the-witness.net/news/2012/02/seamless-cube-map-filtering/\nvec3 fix_cube_lookup( vec3 v, float cube_size, float lod ) {\n\tfloat M = max(max(abs(v.x), abs(v.y)), abs(v.z));\n\tfloat scale = 1.0 - exp2(lod) / cube_size;\n\tif (abs(v.x) != M) v.x *= scale;\n\tif (abs(v.y) != M) v.y *= scale;\n\tif (abs(v.z) != M) v.z *= scale;\n\treturn v;\n}\n\nvec3 correctGamma(vec3 color, float g) {\n\treturn pow(color, vec3(1.0/g));\n}\n\nvoid main() {\n\t\n\tvec3 N \t\t\t\t= normalize( vWsNormal );\n\tvec3 V \t\t\t\t= normalize( vEyePosition );\n\t\n\t// deduce the diffuse and specular color from the baseColor and how metallic the material is\n\tvec3 diffuseColor\t= uBaseColor - uBaseColor * uMetallic;\n\tvec3 specularColor\t= mix( vec3( 0.08 * uSpecular ), uBaseColor, uMetallic );\n\t\n\tvec3 color;\n\t\n\t// sample the pre-filtered cubemap at the corresponding mipmap level\n\tfloat numMips\t\t= 6.0;\n\tfloat mip\t\t\t= numMips - 1.0 + log2(uRoughness);\n\tvec3 lookup\t\t\t= -reflect( V, N );\n\tlookup\t\t\t\t= fix_cube_lookup( lookup, 512.0, mip );\n\tvec3 radiance\t\t= pow( textureCubeLodEXT( uRadianceMap, lookup, mip ).rgb, vec3( 2.2 ) );\n\tvec3 irradiance\t\t= pow( textureCube( uIrradianceMap, N ).rgb, vec3( 1 ) );\n\t\n\t// get the approximate reflectance\n\tfloat NoV\t\t\t= saturate( dot( N, V ) );\n\tvec3 reflectance\t= EnvBRDFApprox( specularColor, uRoughness4, NoV );\n\t\n\t// combine the specular IBL and the BRDF\n    vec3 diffuse  \t\t= diffuseColor * irradiance;\n    vec3 specular \t\t= radiance * reflectance;\n\tcolor\t\t\t\t= diffuse + specular;\n\t\n\n\t\n\n\t// color = irradiance;\n\n\t// apply the tone-mapping\n\tcolor\t\t\t\t= Uncharted2Tonemap( color * uExposure );\n\t// white balance\n\tcolor\t\t\t\t= color * ( 1.0 / Uncharted2Tonemap( vec3( 20.0 ) ) );\n\t\n\t// gamma correction\n\tcolor\t\t\t\t= pow( color, vec3( 1.0 / uGamma ) );\n\n\t// output the fragment color\n    gl_FragColor\t\t= vec4( color, 1.0 );\n\n}"));
+	}
+
+	_createClass(ViewTree, [{
+		key: '_init',
+		value: function _init() {
+			var _this2 = this;
+
+			this._objLoader = new _alfrid2.default.ObjLoader();
+			this._objLoader.load('./assets/tree.obj', function (mesh) {
+				return _this2._onObjLoaded(mesh);
+			}, false);
+		}
+	}, {
+		key: '_onObjLoaded',
+		value: function _onObjLoaded(mesh) {
+			this.mesh = mesh;
+		}
+	}, {
+		key: 'render',
+		value: function render(textureRad, textureIrr) {
+			if (!this.mesh) return;
+			this.shader.bind();
+			this.shader.uniform("uRadianceMap", "uniform1i", 0);
+			this.shader.uniform("uIrradianceMap", "uniform1i", 1);
+			textureRad.bind(0);
+			textureIrr.bind(1);
+
+			var roughness4 = Math.pow(params.roughness, 4.0);
+			var grey = .52;
+			this.shader.uniform("uBaseColor", "uniform3fv", [grey, grey, grey]);
+			this.shader.uniform("uRoughness", "uniform1f", params.roughness);
+			this.shader.uniform("uRoughness4", "uniform1f", roughness4);
+			this.shader.uniform("uMetallic", "uniform1f", params.metallic);
+			this.shader.uniform("uSpecular", "uniform1f", params.specular);
+
+			this.shader.uniform("uExposure", "uniform1f", params.exposure);
+			this.shader.uniform("uGamma", "uniform1f", params.gamma);
+
+			GL.draw(this.mesh);
+		}
+	}]);
+
+	return ViewTree;
+}(_alfrid2.default.View);
+
+exports.default = ViewTree;
+
+},{"./libs/alfrid.js":18}],17:[function(require,module,exports){
 'use strict';
 
 var _alfrid = require('./libs/alfrid.js');
@@ -4800,15 +5929,27 @@ var _SceneApp = require('./SceneApp');
 
 var _SceneApp2 = _interopRequireDefault(_SceneApp);
 
+var _assetsLoader = require('assets-loader');
+
+var _assetsLoader2 = _interopRequireDefault(_assetsLoader);
+
 var _datGui = require('dat-gui');
 
 var _datGui2 = _interopRequireDefault(_datGui);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+var assets = [{ id: 'posx', url: 'assets/px.png' }, { id: 'posy', url: 'assets/py.png' }, { id: 'posz', url: 'assets/pz.png' }, { id: 'negx', url: 'assets/nx.png' }, { id: 'negy', url: 'assets/ny.png' }, { id: 'negz', url: 'assets/nz.png' }, { id: 'irr_posx', url: 'assets/irr_posx.hdr', type: 'binary' }, { id: 'irr_posy', url: 'assets/irr_posy.hdr', type: 'binary' }, { id: 'irr_posz', url: 'assets/irr_posz.hdr', type: 'binary' }, { id: 'irr_negx', url: 'assets/irr_negx.hdr', type: 'binary' }, { id: 'irr_negy', url: 'assets/irr_negy.hdr', type: 'binary' }, { id: 'irr_negz', url: 'assets/irr_negz.hdr', type: 'binary' }, { id: 'rad_posx', url: 'assets/rad_posx.hdr', type: 'binary' }, { id: 'rad_posy', url: 'assets/rad_posy.hdr', type: 'binary' }, { id: 'rad_posz', url: 'assets/rad_posz.hdr', type: 'binary' }, { id: 'rad_negx', url: 'assets/rad_negx.hdr', type: 'binary' }, { id: 'rad_negy', url: 'assets/rad_negy.hdr', type: 'binary' }, { id: 'rad_negz', url: 'assets/rad_negz.hdr', type: 'binary' }];
+
 window.params = {
 	numParticles: 512,
-	skipCount: 5
+	skipCount: 5,
+	metallic: 0,
+	roughness: 1,
+	specular: .1,
+	offset: 0,
+	gamma: 2.2,
+	exposure: 5
 };
 
 if (document.body) {
@@ -4820,6 +5961,21 @@ if (document.body) {
 }
 
 function _init() {
+	document.body.classList.add('isLoading');
+
+	var loader = new _assetsLoader2.default({
+		assets: assets
+	}).on('error', function (error) {
+		console.error(error);
+	}).on('progress', function (p) {
+		console.log('Progress : ', p);
+		var loader = document.body.querySelector('.Loading-Bar');
+		loader.style.width = (p * 100).toFixed(2) + '%';
+	}).on('complete', _onImageLoaded).start();
+}
+
+function _onImageLoaded(o) {
+	window.assets = o;
 	console.debug('Total Particles :', params.numParticles * params.numParticles);
 
 	//	CREATE CANVAS
@@ -4836,7 +5992,7 @@ function _init() {
 	var gui = new _datGui2.default.GUI({ width: 300 });
 }
 
-},{"./SceneApp":4,"./libs/alfrid.js":9,"dat-gui":1}],9:[function(require,module,exports){
+},{"./SceneApp":11,"./libs/alfrid.js":18,"assets-loader":4,"dat-gui":7}],18:[function(require,module,exports){
 (function (global){
 "use strict";var _typeof=typeof Symbol==="function"&&typeof Symbol.iterator==="symbol"?function(obj){return typeof obj;}:function(obj){return obj&&typeof Symbol==="function"&&obj.constructor===Symbol?"symbol":typeof obj;};(function(f){if((typeof exports==="undefined"?"undefined":_typeof(exports))==="object"&&typeof module!=="undefined"){module.exports=f();}else if(typeof define==="function"&&define.amd){define([],f);}else {var g;if(typeof window!=="undefined"){g=window;}else if(typeof global!=="undefined"){g=global;}else if(typeof self!=="undefined"){g=self;}else {g=this;}g.alfrid=f();}})(function(){var define,module,exports;return function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f;}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e);},l,l.exports,e,t,n,r);}return n[o].exports;}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++){s(r[o]);}return s;}({1:[function(_dereq_,module,exports){ /**
  * @fileoverview gl-matrix - High performance matrix and vector operations
@@ -6774,6 +7930,6 @@ break;}}this._highTasks=this._highTasks.concat(this._nextTasks);this._nextTasks=
 'use strict';Object.defineProperty(exports,"__esModule",{value:true});var ShaderLibs={simpleColorFrag:"#define GLSLIFY 1\n// simpleColor.frag\n\n#define SHADER_NAME SIMPLE_COLOR\n\nprecision highp float;\n\nuniform vec3 color;\nuniform float opacity;\n\nvoid main(void) {\n    gl_FragColor = vec4(color, opacity);\n}",bigTriangleVert:"#define GLSLIFY 1\n// bigTriangle.vert\n\n#define SHADER_NAME BIG_TRIANGLE_VERTEX\n\nprecision highp float;\nattribute vec2 aPosition;\nvarying vec2 vTextureCoord;\n\nvoid main(void) {\n    gl_Position = vec4(aPosition, 0.0, 1.0);\n    vTextureCoord = aPosition * .5 + .5;\n}",generalVert:"#define GLSLIFY 1\n// general.vert\n\n#define SHADER_NAME GENERAL_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\n\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\n\nvoid main(void) {\n\tvec3 pos      = aVertexPosition * scale;\n\tpos           += position;\n\tgl_Position   = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\tvTextureCoord = aTextureCoord;\n}",generalNormalVert:"#define GLSLIFY 1\n// generalWithNormal.vert\n\n#define SHADER_NAME GENERAL_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat3 uNormalMatrix;\n\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\n\nvoid main(void) {\n\tvec3 pos      = aVertexPosition * scale;\n\tpos           += position;\n\tgl_Position   = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\t\n\tvTextureCoord = aTextureCoord;\n\tvNormal       = normalize(uNormalMatrix * aNormal);\n}"};exports.default=ShaderLibs;},{}]},{},[11])(11);}); 
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[8]);
+},{}]},{},[17]);
 
 //# sourceMappingURL=bundle.js.map

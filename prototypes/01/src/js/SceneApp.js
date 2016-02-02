@@ -3,6 +3,8 @@ import alfrid from './libs/alfrid.js';
 import ViewSave from './ViewSave';
 import ViewRender from './ViewRender';
 import ViewSimulation from './ViewSimulation';
+import ViewSkybox from './ViewSkybox';
+import ViewTree from './ViewTree';
 
 
 let GL;
@@ -15,6 +17,14 @@ class SceneApp extends alfrid.Scene {
 
 		this.orbitalControl._rx.value = .3;
 		this._count = 0;
+
+		this.cameraSkybox = new alfrid.CameraPerspective();
+		this.camera.setPerspective(90 * Math.PI/180, GL.aspectRatio, .1, 1000);
+		this.cameraSkybox.setPerspective(90 * Math.PI/180, GL.aspectRatio, .1, 1000);
+		let ctrl = new alfrid.OrbitalControl(this.cameraSkybox, window, 1.1);
+		ctrl.lockZoom(true);
+
+		ctrl.center[1] = this.orbitalControl.center[1] = 3;
 	}
 
 
@@ -29,6 +39,34 @@ class SceneApp extends alfrid.Scene {
 		}
 		this._fboCurrent = new alfrid.FrameBuffer(numParticles*2, numParticles*2, o);
 		this._fboTarget  = new alfrid.FrameBuffer(numParticles*2, numParticles*2, o);
+
+		function getAsset(id) {
+			for(var i=0; i<assets.length; i++) {
+				if(id === assets[i].id) {
+					return assets[i].file;
+				}
+			}
+		}
+
+		let irr_posx = alfrid.HDRLoader.parse(getAsset('irr_posx'))
+		let irr_negx = alfrid.HDRLoader.parse(getAsset('irr_negx'))
+		let irr_posy = alfrid.HDRLoader.parse(getAsset('irr_posy'))
+		let irr_negy = alfrid.HDRLoader.parse(getAsset('irr_negy'))
+		let irr_posz = alfrid.HDRLoader.parse(getAsset('irr_posz'))
+		let irr_negz = alfrid.HDRLoader.parse(getAsset('irr_negz'))
+
+		this._textureIrr = new alfrid.GLCubeTexture([irr_posx, irr_negx, irr_posy, irr_negy, irr_posz, irr_negz]);
+
+		let rad_posx = alfrid.HDRLoader.parse(getAsset('rad_posx'))
+		let rad_negx = alfrid.HDRLoader.parse(getAsset('rad_negx'))
+		let rad_posy = alfrid.HDRLoader.parse(getAsset('rad_posy'))
+		let rad_negy = alfrid.HDRLoader.parse(getAsset('rad_negy'))
+		let rad_posz = alfrid.HDRLoader.parse(getAsset('rad_posz'))
+		let rad_negz = alfrid.HDRLoader.parse(getAsset('rad_negz'))
+
+		this._textureRad = new alfrid.GLCubeTexture([rad_posx, rad_negx, rad_posy, rad_negy, rad_posz, rad_negz]);
+
+		this._textureGradient = new alfrid.GLCubeTexture([getAsset('posx'), getAsset('negx'), getAsset('posy'), getAsset('negy'), getAsset('posz'), getAsset('negz')]);
 	}
 	
 
@@ -40,6 +78,8 @@ class SceneApp extends alfrid.Scene {
 
 		this._vRender	 = new ViewRender();
 		this._vSim		 = new ViewSimulation();
+		this._vSkybox 	 = new ViewSkybox();
+		this._vTree 	 = new ViewTree();
 
 		//	SAVE INIT POSITIONS
 		this._vSave = new ViewSave();
@@ -73,6 +113,9 @@ class SceneApp extends alfrid.Scene {
 
 
 	render() {
+		if(!this._vTree.mesh) {	return;	}
+		if(document.body.classList.contains('isLoading')) {	document.body.classList.remove('isLoading');	}
+
 		let p = 0;
 
 		if(this._count % params.skipCount === 0) {
@@ -85,18 +128,16 @@ class SceneApp extends alfrid.Scene {
 		this.orbitalControl._ry.value += -.01;
 		
 
+		GL.clear(0, 0, 0, 0);
+		GL.setMatrices(this.camera);
 		this._bAxis.draw();
 		this._bDotsPlane.draw();
 
 		this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), p);
+		this._vTree.render(this._textureRad, this._textureIrr);
 
-		GL.setMatrices(this.cameraOrtho);
-		GL.disable(GL.DEPTH_TEST);
-		let viewSize = this._fboCurrent.width/2;
-		GL.viewport(0, 0, viewSize, viewSize);
-
-		// this._bCopy.draw(this._fboCurrent.getTexture());
-		GL.enable(GL.DEPTH_TEST);
+		// GL.setMatrices(this.cameraSkybox);
+		this._vSkybox.render(this._textureGradient);
 	}
 }
 
