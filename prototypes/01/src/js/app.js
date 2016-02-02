@@ -29,6 +29,7 @@ let assets = [
 
 window.params = {
 	numParticles:512,
+	treeScale:8,
 	skipCount:5,
 	metallic:0,
 	roughness:1,

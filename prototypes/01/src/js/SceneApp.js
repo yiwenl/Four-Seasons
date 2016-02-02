@@ -17,6 +17,7 @@ class SceneApp extends alfrid.Scene {
 
 		this.orbitalControl._rx.value = .3;
 		this._count = 0;
+		this._hasSaved = false;
 
 		this.cameraSkybox = new alfrid.CameraPerspective();
 		this.camera.setPerspective(90 * Math.PI/180, GL.aspectRatio, .1, 1000);
@@ -83,14 +84,18 @@ class SceneApp extends alfrid.Scene {
 
 		//	SAVE INIT POSITIONS
 		this._vSave = new ViewSave();
+		
+	}
+
+
+	_generateParticles(vertices) {
 		GL.setMatrices(this.cameraOrtho);
 
 		this._fboCurrent.bind();
 		GL.clear(0, 0, 0, 0);
-		this._vSave.render();
-
+		this._vSave.render(vertices);
 		this._fboCurrent.unbind();
-		GL.viewport(0, 0, GL.width, GL.height);
+
 		GL.setMatrices(this.camera);
 	}
 
@@ -114,6 +119,20 @@ class SceneApp extends alfrid.Scene {
 
 	render() {
 		if(!this._vTree.mesh) {	return;	}
+		if(!this._hasSaved) {
+			let vertices = [];
+			if(this._vTree.mesh.length) {
+				for(let i=0; i<this._vTree.mesh.length; i++) {
+					let m = this._vTree.mesh[i];
+					vertices = vertices.concat(m.vertices.concat());
+				}
+			} else {
+				vertices = this._vTree.mesh.vertices.concat();
+			}
+
+			this._generateParticles(vertices);
+			this._hasSaved = true;
+		}
 		if(document.body.classList.contains('isLoading')) {	document.body.classList.remove('isLoading');	}
 
 		let p = 0;
@@ -125,7 +144,7 @@ class SceneApp extends alfrid.Scene {
 		p = this._count / params.skipCount;
 		this._count ++;
 
-		this.orbitalControl._ry.value += -.01;
+		// this.orbitalControl._ry.value += -.01;
 		
 
 		GL.clear(0, 0, 0, 0);

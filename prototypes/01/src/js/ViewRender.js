@@ -22,8 +22,8 @@ class ViewRender extends alfrid.View {
 
 		for(let j=0; j<numParticles; j++) {
 			for(let i=0; i<numParticles; i++) {
-				ux = i/numParticles;
-				uy = j/numParticles;
+				ux = i/numParticles - .5/numParticles;
+				uy = j/numParticles - .5/numParticles;
 				positions.push([ux, uy, 0]);
 				indices.push(count);
 				count ++;

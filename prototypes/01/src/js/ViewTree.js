@@ -40,10 +40,10 @@ class ViewTree extends alfrid.View {
 
 		this.shader.uniform("uExposure", "uniform1f", params.exposure);
 		this.shader.uniform("uGamma", "uniform1f", params.gamma);
+		this.shader.uniform("scale", "uniform1f", params.treeScale);
 
 		GL.draw(this.mesh);
 	}
-
 
 }
 

@@ -21,8 +21,8 @@ void main(void) {
 	gl_PointSize = 1.0;
 	
 	float d      = length(pos);
-	float a      = smoothstep(3.0, 4.5, d);
-	vColor       = vec4(1.0, 1.0, 1.0, 1.0-a);
+	float a      = smoothstep(10.0, 10.5, d);
+	vColor       = vec4(vec3(1.0), 1.0-a);
 
 	if(length(currPos) - length(nextPos) > 1.0) vColor.a = 0.0;
 }
