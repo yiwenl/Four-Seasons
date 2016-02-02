@@ -22,4 +22,6 @@ void main(void) {
 	gl_FragColor += texture2D(texture, v_blurTexCoords[11])*0.0215963866053;
 	gl_FragColor += texture2D(texture, v_blurTexCoords[12])*0.00895781211794;
 	gl_FragColor += texture2D(texture, v_blurTexCoords[13])*0.00442991210551132;
+
+	gl_FragColor.rgb /= gl_FragColor.a;
 }

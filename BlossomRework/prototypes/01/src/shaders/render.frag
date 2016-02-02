@@ -12,16 +12,23 @@ varying float vOpacity;
 varying float vDepth;
 varying vec2 vTextureCoord;
 varying vec2 vUVOffset;
+varying float vMixOffset;
 
 uniform vec3 lightColor;
 uniform vec3 lightDir;
 uniform sampler2D textureFlower;
+uniform sampler2D textureLeaves;
 
 const vec3 FOG_COLOR = vec3(243.0, 230.0, 214.0)/255.0;
 
 
 void main(void) {
-    gl_FragColor = texture2D(textureFlower, vTextureCoord * .5 + vUVOffset);
+    // gl_FragColor = texture2D(textureFlower, vTextureCoord * .5 + vUVOffset);
+    vec4 colorFlower = texture2D(textureFlower, vTextureCoord * .5 + vUVOffset);
+    vec4 colorLeaves = texture2D(textureLeaves, vTextureCoord * .5 + vUVOffset);
+    gl_FragColor = mix(colorFlower, colorLeaves, vMixOffset);
+
+
     gl_FragColor.a *= vOpacity;
     if(gl_FragColor.a < .1) discard;
 

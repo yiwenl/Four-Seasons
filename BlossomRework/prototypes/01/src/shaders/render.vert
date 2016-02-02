@@ -16,6 +16,7 @@ uniform float time;
 uniform float near;
 uniform float far;
 uniform float maxRadius;
+uniform float mixOffset;
 
 
 varying vec2 vTextureCoord;
@@ -24,11 +25,19 @@ varying vec3 vColor;
 varying vec3 vNormal;
 varying float vOpacity;
 varying float vDepth;
+varying float vMixOffset;
 
 const vec3 AXIS_X = vec3(1.0, 0.0, 0.0);
 const vec3 AXIS_Y = vec3(0.0, 1.0, 0.0);
 const vec3 AXIS_Z = vec3(0.0, 0.0, 1.0);
 
+float exponentialOut(float t) {
+  return t == 1.0 ? t : 1.0 - pow(2.0, -10.0 * t);
+}
+
+float exponentialIn(float t) {
+  return t == 0.0 ? t : pow(2.0, 10.0 * (t - 1.0));
+}
 
 vec4 quat_from_axis_angle(vec3 axis, float angle) { 
 	vec4 qr;
@@ -80,6 +89,11 @@ void main(void) {
 	if(distanceToEdge > maxRadius - fadeOutRange) {
 		vOpacity = (maxRadius - distanceToEdge) / fadeOutRange;
 	}
+
+	float rangeOffset = 1.0-clamp(distanceToEdge/maxRadius, 0.0, 1.0);
+	rangeOffset = exponentialOut(rangeOffset);
+
+	vMixOffset = clamp(mixOffset*2.0-rangeOffset, 0.0, 1.0);
 
 	// fadeOutRange = 150.0;
 	// if(distanceToEdge<fadeOutRange) {

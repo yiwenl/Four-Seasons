@@ -6,14 +6,22 @@ var Stats = require("stats-js");
 
 window.params = {
 	skipCount:5,
+<<<<<<< HEAD
 	numParticles:150,
 	windSpeed:1.5,
 	noiseOffset:.0175,
 	noiseDifference:.3,
+=======
+	numParticles:128,
+	windSpeed:1.75,
+	noiseOffset:.015,
+	noiseDifference:.25,
+>>>>>>> 7a0c505275359a3c95a6dc61e8bed22a2bba11a3
 	maxRadius:1000,
 	focusLength:.975,
 	depthContrast:1.0,
-	blur:1.0,
+	blur:.2,
+	textureMix:new bongiovi.EaseNumber(0.0, .05),
 	terrainNoiseHeight:35.0,
 	lightPos:[1.0, 1.0, 1.0],
 	lightColor:[255.0, 255.0, 255.0],
@@ -38,6 +46,9 @@ window.params = {
 			"assets/detailHeight.png",
 			"assets/noise.png",
 			"assets/flower.png",
+			"assets/leaves.png",
+			"assets/tree.jpg",
+			"assets/treeNormal.jpg",
 			"assets/bg.jpg"
 		];
 
@@ -79,6 +90,7 @@ window.params = {
 		this.gui.add(params, "focusLength", 0.9, 1.0);
 		this.gui.add(params, "depthContrast", 1.0, 5.0);
 		this.gui.add(params, "blur", 0.0, 5.0);
+		// this.gui.add(params, "textureMix", 0.0, 1.0);
 		this.gui.add(params, "terrainNoiseHeight", 0.0, 100.0);
 		this.gui.addColor(params, "lightColor");
 		this.gui.add(params, "enablePostEffect");
