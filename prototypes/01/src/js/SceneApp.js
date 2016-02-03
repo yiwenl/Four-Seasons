@@ -5,6 +5,7 @@ import ViewRender from './ViewRender';
 import ViewSimulation from './ViewSimulation';
 import ViewSkybox from './ViewSkybox';
 import ViewTree from './ViewTree';
+import ViewBall from './ViewBall';
 
 
 let GL;
@@ -75,15 +76,16 @@ class SceneApp extends alfrid.Scene {
 		console.log('Init Views');
 		this._bAxis      = new alfrid.BatchAxis();
 		this._bDotsPlane = new alfrid.BatchDotsPlane();
-		this._bCopy 	 = new alfrid.BatchCopy();
-
-		this._vRender	 = new ViewRender();
-		this._vSim		 = new ViewSimulation();
-		this._vSkybox 	 = new ViewSkybox();
-		this._vTree 	 = new ViewTree();
-
+		this._bCopy      = new alfrid.BatchCopy();
+		
+		this._vRender    = new ViewRender();
+		this._vSim       = new ViewSimulation();
+		this._vSkybox    = new ViewSkybox();
+		this._vTree      = new ViewTree();
+		this._vBall      = new ViewBall();
+		
 		//	SAVE INIT POSITIONS
-		this._vSave = new ViewSave();
+		this._vSave      = new ViewSave();
 		
 	}
 

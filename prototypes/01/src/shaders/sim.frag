@@ -124,6 +124,13 @@ vec3 curlNoise( vec3 p ){
 
 }
 
+const float maxRadius = 10.5;
+
+//  PARTICLES RELATED UNIFORMS
+uniform float posOffset;
+uniform float decreaseRate;
+uniform float timeOffset;
+
 void main(void) {
 
     if(vTextureCoord.y < .5) {
@@ -134,7 +141,7 @@ void main(void) {
         vec3 vel     = texture2D(texture, uvVel).rgb;
         vec3 extra   = texture2D(texture, uvExtra).rgb;
     		pos += vel;
-    		const float maxRadius = 10.5;
+    		
     		if(length(pos) > maxRadius) {
           vec2 uvOrgPos = vTextureCoord + vec2(.5, .5);
           vec3 posOrg   = texture2D(texture, uvOrgPos).rgb;
@@ -148,23 +155,18 @@ void main(void) {
       vec3 pos        = texture2D(texture, uvPos).rgb;
       vec3 vel        = texture2D(texture, vTextureCoord).rgb;
       vec3 extra      = texture2D(texture, uvExtra).rgb;
-      float posOffset = (0.25 + extra.r * 0.1);
 
-			/*/
-			float ax = snoise(pos.xyz * posOffset + time * .1);
-			float ay = snoise(pos.yzx * posOffset + time * .01);
-			float az = snoise(pos.zxy * posOffset + time * .001);
-			vec3 acc = vec3(ax, ay, az);
-			/*/
-			vec3 acc = curlNoise(pos * posOffset + time * .3);
-      acc.xz += vec2(1.);
+      float pOffset   = posOffset * mix(1.0, extra.r, .1);
+			vec3 acc = curlNoise(pos * pOffset + time*timeOffset);
+      acc.xz += vec2(.5);
       acc.y += .75;
-      acc *= .5;
-			//*/
 			
-			vel += acc * .001 * (skipCount+1.0);
+			vel += acc * .001 * (skipCount+1.0) * mix(1.0, extra.b, .5);
 
-			const float decrease = .9;
+			float decrease = decreaseRate;
+      if(length(pos) > maxRadius) {
+        decrease = 0.0;
+      }
 			vel *= decrease;
 
 			gl_FragColor = vec4(vel, 1.0);

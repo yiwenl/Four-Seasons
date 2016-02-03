@@ -36,7 +36,12 @@ window.params = {
 	specular:.1,
 	offset:0,
 	gamma:2.2,
-	exposure:5
+	exposure:5,
+	particles : {
+		posOffset:0.75,
+		decreaseRate:.85,
+		timeOffset:0.1
+	}
 };
 
 if(document.body) {
@@ -59,6 +64,11 @@ function _init() {
 		loader.style.width = (p * 100).toFixed(2) + '%';
 	}).on('complete', _onImageLoaded)
 	.start();
+
+	window.gui = new dat.GUI({width:300});
+	gui.add(params.particles, 'posOffset', 0.0, 10.0);
+	gui.add(params.particles, 'decreaseRate', 0.0, 1.0);
+	gui.add(params.particles, 'timeOffset', 0.1, .5);
 }
 
 function _onImageLoaded(o) {
@@ -75,8 +85,5 @@ function _onImageLoaded(o) {
 
 	//	INIT SCENE
 	let scene = new SceneApp();
-
-
-	let gui = new dat.GUI({width:300});
-
+	
 }

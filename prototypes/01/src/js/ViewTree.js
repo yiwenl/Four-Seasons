@@ -8,6 +8,17 @@ class ViewTree extends alfrid.View {
 	
 	constructor() {
 		super(glslify('../shaders/pbr.vert'), glslify('../shaders/pbr.frag'));
+		this.color = [117/255*.35, 105/255*.35, 109/255*.35];
+
+		this.roughness = 1.0;
+		this.specular = 0.1;
+		this.metallic = 0;
+
+		let f = gui.addFolder('tree');
+		f.add(this, 'roughness', 0, 1);
+		f.add(this, 'specular', 0, 1);
+		f.add(this, 'metallic', 0, 1);
+		f.open();
 	}
 
 
@@ -30,13 +41,12 @@ class ViewTree extends alfrid.View {
 		textureRad.bind(0);
 		textureIrr.bind(1);
 
-		let roughness4 = Math.pow(params.roughness, 4.0);
-		let grey = .52;
-		this.shader.uniform("uBaseColor", "uniform3fv", [grey, grey, grey]);
-		this.shader.uniform("uRoughness", "uniform1f", params.roughness);
+		let roughness4 = Math.pow(this.roughness, 4.0);
+		this.shader.uniform("uBaseColor", "uniform3fv", this.color);
+		this.shader.uniform("uRoughness", "uniform1f", this.roughness);
 		this.shader.uniform("uRoughness4", "uniform1f", roughness4);
-		this.shader.uniform("uMetallic", "uniform1f", params.metallic);
-		this.shader.uniform("uSpecular", "uniform1f", params.specular);
+		this.shader.uniform("uMetallic", "uniform1f", this.metallic);
+		this.shader.uniform("uSpecular", "uniform1f", this.specular);
 
 		this.shader.uniform("uExposure", "uniform1f", params.exposure);
 		this.shader.uniform("uGamma", "uniform1f", params.gamma);
