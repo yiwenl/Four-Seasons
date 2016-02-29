@@ -32,7 +32,7 @@ class ViewSave extends alfrid.View {
 		let totalParticles = numParticles * numParticles;
 		let ux, uy;
 		let speedScale = .0005 * params.skipCount;
-		const range = .15;
+		const range = .2;
 
 		let random = function(min, max) { return min + Math.random() * (max - min);	}
 

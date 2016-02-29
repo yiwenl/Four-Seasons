@@ -5777,7 +5777,6 @@ var SceneApp = function (_alfrid$Scene) {
 			this._fboCurrentVel = new _alfrid2.default.FrameBuffer(numParticles, numParticles, o);
 			this._fboTargetVel = new _alfrid2.default.FrameBuffer(numParticles, numParticles, o);
 			this._fboExtra = new _alfrid2.default.FrameBuffer(numParticles, numParticles, o);
-			this._fboSpeed = new _alfrid2.default.FrameBuffer(numParticles, numParticles, o);
 			this._fboRender = new _alfrid2.default.FrameBuffer(GL.width, GL.height);
 
 			clearFbo(this._fboCurrentPos);
@@ -5785,7 +5784,6 @@ var SceneApp = function (_alfrid$Scene) {
 			clearFbo(this._fboCurrentVel);
 			clearFbo(this._fboTargetVel);
 			clearFbo(this._fboExtra);
-			clearFbo(this._fboSpeed);
 			clearFbo(this._fboRender);
 		}
 	}, {
@@ -5816,10 +5814,6 @@ var SceneApp = function (_alfrid$Scene) {
 			this._vSave.render(1);
 			this._fboExtra.unbind();
 
-			this._fboSpeed.bind();
-			this._vSave.render(2);
-			this._fboSpeed.unbind();
-
 			this._fboTargetPos.bind();
 			this._bCopy.draw(this._fboCurrentPos.getTexture());
 			this._fboTargetPos.unbind();
@@ -5833,7 +5827,7 @@ var SceneApp = function (_alfrid$Scene) {
 			//	Update Velocity : bind target Velocity, render simulation with current velocity / current position
 			this._fboTargetVel.bind();
 			GL.clear(0, 0, 0, 1);
-			this._vSim.render(this._fboCurrentVel.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), this._fboSpeed.getTexture());
+			this._vSim.render(this._fboCurrentVel.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture());
 			this._fboTargetVel.unbind();
 
 			//	Update position : bind target Position, render addVel with current position / target velocity;
@@ -6150,7 +6144,7 @@ var ViewPlanes = function (_alfrid$View) {
 	function ViewPlanes() {
 		_classCallCheck(this, ViewPlanes);
 
-		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewPlanes).call(this, "#define GLSLIFY 1\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec2 aPointCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\n\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\n\nuniform float percent;\n\nvarying vec4 vColor;\nvarying vec2 vPointCoord;\n\nvoid main(void) {\n\tvec3 posCurr    = texture2D(texture, aTextureCoord).rgb;\n\tvec3 posNext    = texture2D(textureNext, aTextureCoord).rgb;\n\tvec3 pos        = mix(posCurr, posNext, percent);\n\tvec3 extra      = texture2D(textureExtra, aTextureCoord).rgb;\n\t\n\tvec4 mvPosition = uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\tmvPosition.xyz  += aVertexPosition;\n\t\n\tgl_Position     = uProjectionMatrix * mvPosition;\n\t\n\tvColor          = vec4(1.0, 0.0, 0.0, 1.0);\n\tvPointCoord     = aPointCoord;\n\t// vColor          = vec4(vec3(extra.b), 1.0);\n}", "#define GLSLIFY 1\n// render.frag\n\nprecision highp float;\n\nvarying vec4 vColor;\nvarying vec2 vPointCoord;\n\nvoid main(void) {\n\tif(vColor.a <= 0.01) {\n\t\tdiscard;\n\t}\n\tif(distance(vPointCoord, vec2(.5)) > .5) {\n\t\tdiscard;\n\t}\n    gl_FragColor = vColor;\n}"));
+		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewPlanes).call(this, "#define GLSLIFY 1\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec2 aPointCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\n\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\n\nuniform float percent;\n\nvarying vec4 vColor;\nvarying vec2 vPointCoord;\n\nvoid main(void) {\n\tvec3 posCurr    = texture2D(texture, aTextureCoord).rgb;\n\tvec3 posNext    = texture2D(textureNext, aTextureCoord).rgb;\n\tvec3 pos        = mix(posCurr, posNext, percent);\n\tvec3 extra      = texture2D(textureExtra, aTextureCoord).rgb;\n\t\n\tvec4 mvPosition = uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\tmvPosition.xyz  += aVertexPosition;\n\t\n\tgl_Position     = uProjectionMatrix * mvPosition;\n\t\n\tvColor          = vec4(0.85, 0.0, 0.0, 1.0);\n\tvPointCoord     = aPointCoord;\n\t// vColor          = vec4(vec3(extra.b), 1.0);\n}", "#define GLSLIFY 1\n// render.frag\n\nprecision highp float;\n\nvarying vec4 vColor;\nvarying vec2 vPointCoord;\n\nvoid main(void) {\n\tif(vColor.a <= 0.01) {\n\t\tdiscard;\n\t}\n\tif(distance(vPointCoord, vec2(.5)) > .5) {\n\t\tdiscard;\n\t}\n    gl_FragColor = vColor;\n}"));
 	}
 
 	_createClass(ViewPlanes, [{
@@ -6335,7 +6329,7 @@ var ViewSave = function (_alfrid$View) {
 			var ux = undefined,
 			    uy = undefined;
 			var speedScale = .0005 * params.skipCount;
-			var range = .15;
+			var range = .2;
 
 			var random = function random(min, max) {
 				return min + Math.random() * (max - min);
@@ -6431,7 +6425,7 @@ var ViewSimulation = function (_alfrid$View) {
 	function ViewSimulation() {
 		_classCallCheck(this, ViewSimulation);
 
-		var fs = "#define GLSLIFY 1\n// sim.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\n\nvoid main(void) {\n    gl_FragColor = texture2D(texture, vTextureCoord);\n    // gl_FragColor.g += .001;\n}";
+		var fs = "#define GLSLIFY 1\n// sim.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D textureVel;\nuniform sampler2D texturePos;\nuniform sampler2D textureExtra;\n\nvec3 mod289(vec3 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 mod289(vec4 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 permute(vec4 x) {\treturn mod289(((x*34.0)+1.0)*x);\t}\n\nvec4 taylorInvSqrt(vec4 r) {\treturn 1.79284291400159 - 0.85373472095314 * r;}\n\nfloat snoise(vec3 v) { \n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n  vec3 g = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g;\n  vec3 i1 = min( g.xyz, l.zxy );\n  vec3 i2 = max( g.xyz, l.zxy );\n\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n  i = mod289(i); \n  vec4 p = permute( permute( permute( \n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) \n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), \n                                dot(p2,x2), dot(p3,x3) ) );\n}\n\nvec3 snoiseVec3( vec3 x ){\n\n  float s  = snoise(vec3( x ));\n  float s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));\n  float s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));\n  vec3 c = vec3( s , s1 , s2 );\n  return c;\n\n}\n\nvec3 curlNoise( vec3 p ){\n  \n  const float e = .1;\n  vec3 dx = vec3( e   , 0.0 , 0.0 );\n  vec3 dy = vec3( 0.0 , e   , 0.0 );\n  vec3 dz = vec3( 0.0 , 0.0 , e   );\n\n  vec3 p_x0 = snoiseVec3( p - dx );\n  vec3 p_x1 = snoiseVec3( p + dx );\n  vec3 p_y0 = snoiseVec3( p - dy );\n  vec3 p_y1 = snoiseVec3( p + dy );\n  vec3 p_z0 = snoiseVec3( p - dz );\n  vec3 p_z1 = snoiseVec3( p + dz );\n\n  float x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;\n  float y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;\n  float z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;\n\n  const float divisor = 1.0 / ( 2.0 * e );\n  return normalize( vec3( x , y , z ) * divisor );\n\n}\n\nvoid main(void) {\n\n\tvec3 pos = texture2D(texturePos, vTextureCoord).rgb;\n\tvec3 vel = texture2D(textureVel, vTextureCoord).rgb;\n\tvec3 extra = texture2D(textureExtra, vTextureCoord).rgb;\n\n\tfloat posOffset = .5 * mix(extra.r, 1.0, .5);\n\n\tvec3 acc = curlNoise(pos*posOffset);\n\t// acc.y += 1.0;\n\t// acc.xz += .25;\n\tacc += vec3(.25, 1.0, -.25);\n\tvel += acc * .005;\n\n\tconst float decrease = .95;\n\tvel *= decrease;\n    // gl_FragColor.g += .001;\n    gl_FragColor = vec4(vel, 1.0);\n}";
 		fs = fs.replace('{{NUM_PARTICLES}}', params.numParticles.toFixed(1));
 
 		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ViewSimulation).call(this, _alfrid2.default.ShaderLibs.bigTriangleVert, fs));
@@ -6452,24 +6446,19 @@ var ViewSimulation = function (_alfrid$View) {
 			this.shader.uniform("textureVel", "uniform1i", 0);
 			this.shader.uniform("texturePos", "uniform1i", 1);
 			this.shader.uniform("textureExtra", "uniform1i", 2);
-			this.shader.uniform("textureSpeed", "uniform1i", 3);
 
 			// this.shader.uniform("time", "uniform1f", this.time);
 			this.shader.uniform("range", "uniform1f", params.range);
 			this.shader.uniform("skipCount", "uniform1f", params.skipCount);
-			this.shader.uniform("minThreshold", "uniform1f", params.minThreshold);
-			this.shader.uniform("maxThreshold", "uniform1f", params.maxThreshold);
-			this.shader.uniform("speedScale", "uniform1f", params.speed * params.skipCount);
 		}
 	}, {
 		key: 'render',
-		value: function render(textureVel, texturePos, textureExtra, textureSpeed) {
+		value: function render(textureVel, texturePos, textureExtra) {
 			this.time += .01;
 			this.shader.bind();
 			textureVel.bind(0);
 			texturePos.bind(1);
 			textureExtra.bind(2);
-			textureSpeed.bind(3);
 
 			this.shader.uniform("time", "uniform1f", this.time);
 
@@ -6603,7 +6592,7 @@ var _datGui2 = _interopRequireDefault(_datGui);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 window.params = {
-	numParticles: 256,
+	numParticles: 256 * 2,
 	skipCount: 10,
 	range: 1.2,
 	speed: 1.5,

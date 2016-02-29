@@ -60,7 +60,6 @@ class SceneApp extends alfrid.Scene {
 		this._fboCurrentVel = new alfrid.FrameBuffer(numParticles, numParticles, o);
 		this._fboTargetVel  = new alfrid.FrameBuffer(numParticles, numParticles, o);
 		this._fboExtra      = new alfrid.FrameBuffer(numParticles, numParticles, o);
-		this._fboSpeed      = new alfrid.FrameBuffer(numParticles, numParticles, o);
 		this._fboRender     = new alfrid.FrameBuffer(GL.width, GL.height);
 
 		clearFbo(this._fboCurrentPos);
@@ -68,7 +67,6 @@ class SceneApp extends alfrid.Scene {
 		clearFbo(this._fboCurrentVel);
 		clearFbo(this._fboTargetVel);
 		clearFbo(this._fboExtra);
-		clearFbo(this._fboSpeed);
 		clearFbo(this._fboRender);
 	}
 	
@@ -100,10 +98,6 @@ class SceneApp extends alfrid.Scene {
 		this._vSave.render(1);
 		this._fboExtra.unbind();
 
-		this._fboSpeed.bind();
-		this._vSave.render(2);
-		this._fboSpeed.unbind();
-
 		this._fboTargetPos.bind();
 		this._bCopy.draw(this._fboCurrentPos.getTexture());
 		this._fboTargetPos.unbind();
@@ -117,7 +111,7 @@ class SceneApp extends alfrid.Scene {
 		//	Update Velocity : bind target Velocity, render simulation with current velocity / current position
 		this._fboTargetVel.bind();
 		GL.clear(0, 0, 0, 1);
-		this._vSim.render(this._fboCurrentVel.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), this._fboSpeed.getTexture() );
+		this._vSim.render(this._fboCurrentVel.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture());
 		this._fboTargetVel.unbind();
 
 
