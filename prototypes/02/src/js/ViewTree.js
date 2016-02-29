@@ -23,22 +23,24 @@ class ViewTree extends alfrid.View {
 		const UP = vec3.fromValues(0, 1, 0);
 
 		function angleTween(a, b) {
-			return acos(vec3.dot(a, b));
+			return Math.acos(vec3.dot(a, b)) * 180/Math.PI;
 		}	
 
 
 		this._points = [];
 		let v = vec3.create();
 		let normals = this.mesh.normals;
-		console.log(this.mesh);
-		// console.log(normals.length);
-		// for(let i=0; i<normals.length; i++) {
-		// 	v[0] = this.mesh.normals[i][0];
-		// 	v[1] = this.mesh.normals[i][1];
-		// 	v[2] = this.mesh.normals[i][2];
+		let vertices = this.mesh.vertices;
+		for(let i=0; i<normals.length; i++) {
+			v[0] = normals[i][0];
+			v[1] = normals[i][1];
+			v[2] = normals[i][2];
 
-		// 	// console.log(i, angleTween(UP, v));
-		// }
+			if(angleTween(v, UP) < 90 && vertices[i][1] > 1) {
+				this._points.push(vec3.clone(vertices[i]));	
+			}
+			
+		}
 
 	}
 
@@ -53,7 +55,15 @@ class ViewTree extends alfrid.View {
 		GL.draw(this.mesh);
 	}
 
+	//	GETTER / SETTER
 
+	get isReady() {
+		return this.mesh !== undefined;
+	}
+
+	get points() {
+		return this._points;
+	}
 }
 
 export default ViewTree;

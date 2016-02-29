@@ -6,19 +6,18 @@ let glslify = require("glslify");
 
 let random = function(min, max) { return min + Math.random() * (max - min);	}
 
-let GL;
+let GL = alfrid.GL;
 
 class ViewSave extends alfrid.View {
-	constructor() {
-
-		GL = alfrid.GL;
+	constructor(points) {
 
 		super(glslify('../shaders/save.vert'), glslify('../shaders/save.frag') );
-
+		this._points = points;
+		this._save();
 	}
 
 
-	_init() {
+	_save() {
 		//	SAVE FOR POSITION
 		//	SAVE FOR RANDOM
 
@@ -32,12 +31,22 @@ class ViewSave extends alfrid.View {
 		let numParticles = params.numParticles;
 		let totalParticles = numParticles * numParticles;
 		let ux, uy;
-		let range = 5;
 		let speedScale = .0005 * params.skipCount;
+		const range = .15;
+
+		let random = function(min, max) { return min + Math.random() * (max - min);	}
+
+		function getRandomVertex(points) {
+			let index = Math.floor(Math.random() * points.length);
+			let v = points[index];
+
+			return [v[0]*2+random(-range, range), v[1]*2-2.5+random(-range, range), v[2]*2+random(-range, range)];
+		}
 
 		for(let j=0; j<numParticles; j++) {
 			for(let i=0; i<numParticles; i++) {
-				positions.push([random(-range, range), random(1.5, range), random(-range, range)]);
+				let p = getRandomVertex(this._points)
+				positions.push(p);
 
 				ux = i/numParticles*2.0-1.0+.5/numParticles;
 				uy = j/numParticles*2.0-1.0+.5/numParticles;

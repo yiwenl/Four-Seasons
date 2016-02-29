@@ -9,7 +9,7 @@ let GL = alfrid.GL;
 class ViewSimulation extends alfrid.View {
 	
 	constructor() {
-		let fs = glslify('../shaders/flocking.frag');
+		let fs = glslify('../shaders/sim.frag');
 		fs = fs.replace('{{NUM_PARTICLES}}', params.numParticles.toFixed(1));
 		super(alfrid.ShaderLibs.bigTriangleVert, fs);
 		this.time = Math.random() * 0xFF;

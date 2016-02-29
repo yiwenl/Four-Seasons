@@ -26,6 +26,7 @@ class SceneApp extends alfrid.Scene {
 		this.orbitalControl.positionOffset[1] = -.5;
 
 		this._count = 0;
+		this._hasSaved = false;
 	}
 
 
@@ -84,9 +85,12 @@ class SceneApp extends alfrid.Scene {
 		this._vPost   = new ViewPost();
 		this._vTree   = new ViewTree();
 
-		//	SAVE INIT POSITIONS
-		this._vSave = new ViewSave();
+	}
+
+
+	_savePositions() {
 		GL.setMatrices(this.cameraOrtho);
+		this._vSave = new ViewSave(this._vTree.points);
 
 		this._fboCurrentPos.bind();
 		this._vSave.render(0);
@@ -105,6 +109,7 @@ class SceneApp extends alfrid.Scene {
 		this._fboTargetPos.unbind();
 
 		GL.setMatrices(this.camera);
+		this._hasSaved = true;
 	}
 
 
@@ -135,6 +140,10 @@ class SceneApp extends alfrid.Scene {
 
 
 	render() {
+		// console.log(this._vTree.isReady);
+		if(this._vTree.isReady && !this._hasSaved) {
+			this._savePositions();
+		}
 		this._count ++;
 		if(this._count % params.skipCount == 0) {
 			this._count = 0;
@@ -147,7 +156,7 @@ class SceneApp extends alfrid.Scene {
 
 		// this._fboRender.bind();
 		// GL.clear(0, 0, 0, 0);
-		// this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p);
+		this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p);
 		this._vFloor.render();
 		this._vDome.render();
 		this._vTree.render(this._textureAO);
