@@ -55,15 +55,17 @@ class SceneApp extends alfrid.Scene {
 			fbo.unbind();
 		}
 
-		this._fboCurrentPos = new alfrid.FrameBuffer(numParticles, numParticles, o);
-		this._fboTargetPos  = new alfrid.FrameBuffer(numParticles, numParticles, o);
-		this._fboCurrentVel = new alfrid.FrameBuffer(numParticles, numParticles, o);
-		this._fboTargetVel  = new alfrid.FrameBuffer(numParticles, numParticles, o);
-		this._fboExtra      = new alfrid.FrameBuffer(numParticles, numParticles, o);
-		this._fboRender     = new alfrid.FrameBuffer(GL.width, GL.height);
+		this._fboCurrentPos  = new alfrid.FrameBuffer(numParticles, numParticles, o);
+		this._fboTargetPos   = new alfrid.FrameBuffer(numParticles, numParticles, o);
+		this._fboOriginalPos = new alfrid.FrameBuffer(numParticles, numParticles, o);
+		this._fboCurrentVel  = new alfrid.FrameBuffer(numParticles, numParticles, o);
+		this._fboTargetVel   = new alfrid.FrameBuffer(numParticles, numParticles, o);
+		this._fboExtra       = new alfrid.FrameBuffer(numParticles, numParticles, o);
+		this._fboRender      = new alfrid.FrameBuffer(GL.width, GL.height);
 
 		clearFbo(this._fboCurrentPos);
 		clearFbo(this._fboTargetPos);
+		clearFbo(this._fboOriginalPos);
 		clearFbo(this._fboCurrentVel);
 		clearFbo(this._fboTargetVel);
 		clearFbo(this._fboExtra);
@@ -102,6 +104,10 @@ class SceneApp extends alfrid.Scene {
 		this._bCopy.draw(this._fboCurrentPos.getTexture());
 		this._fboTargetPos.unbind();
 
+		this._fboOriginalPos.bind();
+		this._bCopy.draw(this._fboCurrentPos.getTexture());
+		this._fboOriginalPos.unbind();
+
 		GL.setMatrices(this.camera);
 		this._hasSaved = true;
 	}
@@ -118,7 +124,7 @@ class SceneApp extends alfrid.Scene {
 		//	Update position : bind target Position, render addVel with current position / target velocity;
 		this._fboTargetPos.bind();
 		GL.clear(0, 0, 0, 1);
-		this._vAddVel.render(this._fboCurrentPos.getTexture(), this._fboTargetVel.getTexture());
+		this._vAddVel.render(this._fboCurrentPos.getTexture(), this._fboTargetVel.getTexture(), this._fboOriginalPos.getTexture());
 		this._fboTargetPos.unbind();
 
 		//	SWAPPING : PING PONG

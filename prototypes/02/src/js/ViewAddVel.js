@@ -14,17 +14,20 @@ class ViewAddVel extends alfrid.View {
 
 	_init() {
 		this.mesh = alfrid.Geom.bigTriangle();
+
+		this.shader.bind();
+		this.shader.uniform("texturePos", "uniform1i", 0);
+		this.shader.uniform("textureVel", "uniform1i", 1);
+		this.shader.uniform("textureOrg", "uniform1i", 2);
 	}
 
 
-	render(texturePos, textureVel) {
+	render(texturePos, textureVel, textureOrg) {
 		this.shader.bind();
 
-		this.shader.uniform("texturePos", "uniform1i", 0);
 		texturePos.bind(0);
-
-		this.shader.uniform("textureVel", "uniform1i", 1);
 		textureVel.bind(1);
+		textureOrg.bind(2);
 
 		GL.draw(this.mesh);
 	}

@@ -17,8 +17,13 @@ varying vec4 vColor;
 varying vec2 vPointCoord;
 
 void main(void) {
+	float offset 	= 1.0;
 	vec3 posCurr    = texture2D(texture, aTextureCoord).rgb;
 	vec3 posNext    = texture2D(textureNext, aTextureCoord).rgb;
+
+	if(length(posNext) < length(posCurr)) {
+		offset = 0.0;
+	}
 	vec3 pos        = mix(posCurr, posNext, percent);
 	vec3 extra      = texture2D(textureExtra, aTextureCoord).rgb;
 	
@@ -27,7 +32,7 @@ void main(void) {
 	
 	gl_Position     = uProjectionMatrix * mvPosition;
 	
-	vColor          = vec4(0.85, 0.0, 0.0, 1.0);
+	vColor          = vec4(0.85, 0.0, 0.0, 1.0) * offset;
 	vPointCoord     = aPointCoord;
 	// vColor          = vec4(vec3(extra.b), 1.0);
 }

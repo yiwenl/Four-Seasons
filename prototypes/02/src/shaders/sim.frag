@@ -7,6 +7,7 @@ varying vec2 vTextureCoord;
 uniform sampler2D textureVel;
 uniform sampler2D texturePos;
 uniform sampler2D textureExtra;
+uniform float time;
 
 
 vec3 mod289(vec3 x) {	return x - floor(x * (1.0 / 289.0)) * 289.0;	}
@@ -118,17 +119,19 @@ void main(void) {
 	vec3 vel = texture2D(textureVel, vTextureCoord).rgb;
 	vec3 extra = texture2D(textureExtra, vTextureCoord).rgb;
 
-	float posOffset = .5 * mix(extra.r, 1.0, .5);
+	float posOffset = .35 * mix(extra.r, 1.0, .5);
 
-	vec3 acc = curlNoise(pos*posOffset);
+	vec3 acc = curlNoise(pos*posOffset+time);
 	// acc.y += 1.0;
 	// acc.xz += .25;
 	acc += vec3(.25, 1.0, -.25);
-	vel += acc * .005;
+	vel += acc * .025;
 
 
-	const float decrease = .95;
+	float decrease = .9;
+	if(length(pos) > 12.0) decrease = .3;
 	vel *= decrease;
+
     // gl_FragColor.g += .001;
     gl_FragColor = vec4(vel, 1.0);
 }
