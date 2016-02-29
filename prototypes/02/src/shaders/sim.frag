@@ -119,7 +119,7 @@ void main(void) {
 	vec3 vel = texture2D(textureVel, vTextureCoord).rgb;
 	vec3 extra = texture2D(textureExtra, vTextureCoord).rgb;
 
-	float posOffset = .35 * mix(extra.r, 1.0, .5);
+	float posOffset = .35 * mix(extra.r, 1.0, .75);
 
 	vec3 acc = curlNoise(pos*posOffset+time);
 	// acc.y += 1.0;
@@ -130,6 +130,7 @@ void main(void) {
 
 	float decrease = .9;
 	if(length(pos) > 12.0) decrease = .3;
+	if(length(pos) < 2.0) decrease = .7;
 	vel *= decrease;
 
     // gl_FragColor.g += .001;
