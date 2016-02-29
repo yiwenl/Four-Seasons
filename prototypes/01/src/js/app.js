@@ -28,7 +28,7 @@ let assets = [
 
 
 window.params = {
-	numParticles:512,
+	numParticles:256*2,
 	treeScale:8,
 	skipCount:5,
 	metallic:0,
@@ -44,11 +44,19 @@ window.params = {
 	}
 };
 
-if(document.body) {
-	_init();
-} else {
-	window.addEventListener('load', ()=>_init());
+let imagePetal = new Image();
+imagePetal.onload = function() {
+	window.imgPetal = imagePetal;
+
+	if(document.body) {
+		_init();
+	} else {
+		window.addEventListener('load', ()=>_init());
+	}
 }
+imagePetal.src = 'assets/petal.png';
+
+
 
 
 function _init() {

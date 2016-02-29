@@ -6,14 +6,14 @@ import ViewSimulation from './ViewSimulation';
 import ViewSkybox from './ViewSkybox';
 import ViewTree from './ViewTree';
 import ViewBall from './ViewBall';
-
+import ViewPetals from './ViewPetals';
 
 let GL;
 
 class SceneApp extends alfrid.Scene {
 	constructor() {
 		GL = alfrid.GL;
-		GL.enableAlphaBlending();
+		// GL.enableAlphaBlending();
 		super();
 
 		this.orbitalControl._rx.value = .3;
@@ -69,6 +69,8 @@ class SceneApp extends alfrid.Scene {
 		this._textureRad = new alfrid.GLCubeTexture([rad_posx, rad_negx, rad_posy, rad_negy, rad_posz, rad_negz]);
 
 		this._textureGradient = new alfrid.GLCubeTexture([getAsset('posx'), getAsset('negx'), getAsset('posy'), getAsset('negy'), getAsset('posz'), getAsset('negz')]);
+
+		this._texturePetal = new alfrid.GLTexture(imgPetal);
 	}
 	
 
@@ -83,6 +85,7 @@ class SceneApp extends alfrid.Scene {
 		this._vSkybox    = new ViewSkybox();
 		this._vTree      = new ViewTree();
 		this._vBall      = new ViewBall();
+		this._vPetal	 = new ViewPetals();
 		
 		//	SAVE INIT POSITIONS
 		this._vSave      = new ViewSave();
@@ -154,7 +157,8 @@ class SceneApp extends alfrid.Scene {
 		this._bAxis.draw();
 		this._bDotsPlane.draw();
 
-		this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), p);
+		// this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), p);
+		this._vPetal.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), p, this._texturePetal);
 		this._vTree.render(this._textureRad, this._textureIrr);
 
 		// GL.setMatrices(this.cameraSkybox);

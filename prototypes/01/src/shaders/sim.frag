@@ -158,10 +158,15 @@ void main(void) {
 
       float pOffset   = posOffset * mix(1.0, extra.r, .1);
 			vec3 acc = curlNoise(pos * pOffset + time*timeOffset);
-      acc.xz += vec2(.5);
-      acc.y += .75;
+      acc.xz += vec2(.25);
+      acc.y += .25;
 			
 			vel += acc * .001 * (skipCount+1.0) * mix(1.0, extra.b, .5);
+
+      const float minY = .5;
+      if(pos.y < minY) {
+        vel.y += (minY-pos.y) * .4;
+      }
 
 			float decrease = decreaseRate;
       if(length(pos) > maxRadius) {

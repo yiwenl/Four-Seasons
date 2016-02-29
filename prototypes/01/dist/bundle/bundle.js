@@ -5399,6 +5399,10 @@ var _ViewBall = require('./ViewBall');
 
 var _ViewBall2 = _interopRequireDefault(_ViewBall);
 
+var _ViewPetals = require('./ViewPetals');
+
+var _ViewPetals2 = _interopRequireDefault(_ViewPetals);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -5416,7 +5420,7 @@ var SceneApp = function (_alfrid$Scene) {
 		_classCallCheck(this, SceneApp);
 
 		GL = _alfrid2.default.GL;
-		GL.enableAlphaBlending();
+		// GL.enableAlphaBlending();
 
 		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SceneApp).call(this));
 
@@ -5475,6 +5479,8 @@ var SceneApp = function (_alfrid$Scene) {
 			this._textureRad = new _alfrid2.default.GLCubeTexture([rad_posx, rad_negx, rad_posy, rad_negy, rad_posz, rad_negz]);
 
 			this._textureGradient = new _alfrid2.default.GLCubeTexture([getAsset('posx'), getAsset('negx'), getAsset('posy'), getAsset('negy'), getAsset('posz'), getAsset('negz')]);
+
+			this._texturePetal = new _alfrid2.default.GLTexture(imgPetal);
 		}
 	}, {
 		key: '_initViews',
@@ -5489,6 +5495,7 @@ var SceneApp = function (_alfrid$Scene) {
 			this._vSkybox = new _ViewSkybox2.default();
 			this._vTree = new _ViewTree2.default();
 			this._vBall = new _ViewBall2.default();
+			this._vPetal = new _ViewPetals2.default();
 
 			//	SAVE INIT POSITIONS
 			this._vSave = new _ViewSave2.default();
@@ -5562,7 +5569,8 @@ var SceneApp = function (_alfrid$Scene) {
 			this._bAxis.draw();
 			this._bDotsPlane.draw();
 
-			this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), p);
+			// this._vRender.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), p);
+			this._vPetal.render(this._fboTarget.getTexture(), this._fboCurrent.getTexture(), p, this._texturePetal);
 			this._vTree.render(this._textureRad, this._textureIrr);
 
 			// GL.setMatrices(this.cameraSkybox);
@@ -5575,7 +5583,7 @@ var SceneApp = function (_alfrid$Scene) {
 
 exports.default = SceneApp;
 
-},{"./ViewBall":12,"./ViewRender":13,"./ViewSave":14,"./ViewSimulation":15,"./ViewSkybox":16,"./ViewTree":17,"./libs/alfrid.js":19}],12:[function(require,module,exports){
+},{"./ViewBall":12,"./ViewPetals":13,"./ViewRender":14,"./ViewSave":15,"./ViewSimulation":16,"./ViewSkybox":17,"./ViewTree":18,"./libs/alfrid.js":20}],12:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -5635,7 +5643,191 @@ var ViewBall = function (_alfrid$View) {
 
 exports.default = ViewBall;
 
-},{"./libs/alfrid.js":19}],13:[function(require,module,exports){
+},{"./libs/alfrid.js":20}],13:[function(require,module,exports){
+'use strict';
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _alfrid = require('./libs/alfrid.js');
+
+var _alfrid2 = _interopRequireDefault(_alfrid);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; } // ViewPetals.js
+
+var GL = _alfrid2.default.GL;
+
+var random = function random(min, max) {
+	return min + Math.random() * (max - min);
+};
+
+var ViewPetals = function (_alfrid$View) {
+	_inherits(ViewPetals, _alfrid$View);
+
+	function ViewPetals() {
+		_classCallCheck(this, ViewPetals);
+
+		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ViewPetals).call(this, "#define GLSLIFY 1\n// render.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec2 aPosCoord;\nattribute vec4 aRotation;\nattribute vec3 aExtra;\nattribute vec3 aNormal;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat3 uNormalMatrix;\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform float percent;\nuniform float petalSize;\nuniform float time;\n\nvarying vec4 vColor;\nvarying vec3 vNormal;\nvarying vec2 vTextureCoord;\n\nvec4 quat_from_axis_angle(vec3 axis, float angle) { \n\tvec4 qr;\n\tfloat half_angle = (angle * 0.5);\n\tqr.x = axis.x * sin(half_angle);\n\tqr.y = axis.y * sin(half_angle);\n\tqr.z = axis.z * sin(half_angle);\n\tqr.w = cos(half_angle);\n\treturn qr;\n}\n\nvec3 rotate_vertex_position(vec3 position, vec3 axis, float angle) { \n\tvec4 q = quat_from_axis_angle(axis, angle);\n\tvec3 v = position.xyz;\n\treturn v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);\n}\n\nvoid main(void) {\n\tvec2 uv        = aPosCoord * .5;\n\tvec3 currPos   = texture2D(texture, uv).rgb;\n\tvec3 nextPos   = texture2D(textureNext, uv).rgb;\n\tvec3 pos       = mix(currPos, nextPos, percent);\n\tvec3 finalSize = petalSize * mix(aExtra, vec3(1.0), .5);\n\tvec3 posOffset = aVertexPosition * finalSize;\n\t\n\tfloat angle    = aRotation.w + time * mix(aExtra.y, 1.0, .1);\n\tvec3 axis      = aRotation.xyz;\n\tposOffset      = rotate_vertex_position(posOffset, axis, angle);\n\t\n\tpos            += posOffset;\n\tgl_Position    = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\t\n\tgl_PointSize   = 1.0;\n\t\n\tfloat d        = length(pos);\n\tfloat a        = smoothstep(10.0, 10.5, d);\n\tvColor         = vec4(1.0-a);\n\t\n\t\n\tvTextureCoord  = aTextureCoord;\n\tvNormal        = uNormalMatrix * rotate_vertex_position(aNormal, axis, angle);\n\tif(length(currPos) - length(nextPos) > 1.0) vColor.a = 0.0;\n}", "#define GLSLIFY 1\n// petal.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texturePetal;\nvarying vec4 vColor;\nvarying vec3 vNormal;\n\nconst vec3 LIGHT = vec3(1.0);\n\nfloat diffuse(vec3 N, vec3 L) {\n\treturn max(dot(N, normalize(L)), 0.0);\n}\n\nvoid main(void) {\n\tif(vColor.a <= 0.0) discard;\n\tvec4 color = texture2D(texturePetal, vTextureCoord);\n\tif(color.a <= 0.001) discard;\n\t\n    \n    float _diffuse = diffuse(vNormal, LIGHT);\n    gl_FragColor = color;\n    gl_FragColor.rgb *= mix(_diffuse, 1.0, .5);\n}"));
+
+		_this.time = 0;
+		return _this;
+	}
+
+	_createClass(ViewPetals, [{
+		key: '_init',
+		value: function _init() {
+			var positions = [];
+			var coords = [];
+			var posCoords = [];
+			var quat = [];
+			var indices = [];
+			var extra = [];
+			var normals = [];
+			var count = 0;
+			var numParticles = params.numParticles;
+			var ux = undefined,
+			    uy = undefined;
+
+			function getRandomRotation() {
+				var v = vec3.fromValues(random(-1, 1), random(-1, 1), random(-1, 1));
+				vec3.normalize(v, v);
+				return v;
+			}
+
+			for (var j = 0; j < numParticles; j++) {
+				for (var i = 0; i < numParticles; i++) {
+
+					var axis = getRandomRotation();
+					var q = [axis[0], axis[1], axis[2], Math.random() * Math.PI * 2.0];
+					var rand = [Math.random(), Math.random(), Math.random()];
+
+					ux = i / numParticles - .5 / numParticles;
+					uy = j / numParticles - .5 / numParticles;
+
+					positions.push([-1, -1, 0]);
+					positions.push([1, -1, 0]);
+					positions.push([1, 1, 0]);
+					positions.push([-1, 1, 0]);
+
+					coords.push([0, 0]);
+					coords.push([1, 0]);
+					coords.push([1, 1]);
+					coords.push([0, 1]);
+
+					normals.push([0, 0, 1]);
+					normals.push([0, 0, 1]);
+					normals.push([0, 0, 1]);
+					normals.push([0, 0, 1]);
+
+					posCoords.push([ux, uy]);
+					posCoords.push([ux, uy]);
+					posCoords.push([ux, uy]);
+					posCoords.push([ux, uy]);
+
+					quat.push(q);
+					quat.push(q);
+					quat.push(q);
+					quat.push(q);
+
+					extra.push(rand);
+					extra.push(rand);
+					extra.push(rand);
+					extra.push(rand);
+
+					indices.push(count * 4 + 0);
+					indices.push(count * 4 + 1);
+					indices.push(count * 4 + 2);
+					indices.push(count * 4 + 0);
+					indices.push(count * 4 + 2);
+					indices.push(count * 4 + 3);
+
+					count++;
+
+					positions.push([-1, -1, 0]);
+					positions.push([1, -1, 0]);
+					positions.push([1, 1, 0]);
+					positions.push([-1, 1, 0]);
+
+					coords.push([0, 0]);
+					coords.push([1, 0]);
+					coords.push([1, 1]);
+					coords.push([0, 1]);
+
+					normals.push([0, 0, -1]);
+					normals.push([0, 0, -1]);
+					normals.push([0, 0, -1]);
+					normals.push([0, 0, -1]);
+
+					posCoords.push([ux, uy]);
+					posCoords.push([ux, uy]);
+					posCoords.push([ux, uy]);
+					posCoords.push([ux, uy]);
+
+					quat.push(q);
+					quat.push(q);
+					quat.push(q);
+					quat.push(q);
+
+					extra.push(rand);
+					extra.push(rand);
+					extra.push(rand);
+					extra.push(rand);
+
+					indices.push(count * 4 + 3);
+					indices.push(count * 4 + 2);
+					indices.push(count * 4 + 0);
+					indices.push(count * 4 + 2);
+					indices.push(count * 4 + 1);
+					indices.push(count * 4 + 0);
+
+					count++;
+				}
+			}
+
+			this.mesh = new _alfrid2.default.Mesh(GL.Triangles);
+			this.mesh.bufferVertex(positions);
+			this.mesh.bufferTexCoords(coords);
+			this.mesh.bufferNormal(normals);
+			this.mesh.bufferData(posCoords, 'aPosCoord', 2);
+			this.mesh.bufferData(quat, 'aRotation', 4);
+			this.mesh.bufferData(extra, 'aExtra', 3);
+			this.mesh.bufferIndices(indices);
+		}
+	}, {
+		key: 'render',
+		value: function render(texture, textureNext, percent, texturePetal) {
+			this.time += .04;
+			this.shader.bind();
+			this.shader.uniform("texture", "uniform1i", 0);
+			texture.bind(0);
+			this.shader.uniform("textureNext", "uniform1i", 1);
+			textureNext.bind(1);
+			this.shader.uniform("texturePetal", "uniform1i", 2);
+			texturePetal.bind(2);
+			this.shader.uniform("percent", "uniform1f", percent);
+
+			this.shader.uniform("petalSize", "uniform1f", .05);
+			this.shader.uniform("time", "uniform1f", this.time);
+
+			GL.draw(this.mesh);
+		}
+	}]);
+
+	return ViewPetals;
+}(_alfrid2.default.View);
+
+exports.default = ViewPetals;
+
+},{"./libs/alfrid.js":20}],14:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -5713,7 +5905,7 @@ var ViewRender = function (_alfrid$View) {
 
 exports.default = ViewRender;
 
-},{"./libs/alfrid.js":19}],14:[function(require,module,exports){
+},{"./libs/alfrid.js":20}],15:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -5833,7 +6025,7 @@ var ViewSave = function (_alfrid$View) {
 
 exports.default = ViewSave;
 
-},{"./libs/alfrid.js":19}],15:[function(require,module,exports){
+},{"./libs/alfrid.js":20}],16:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -5864,7 +6056,7 @@ var ViewSimulation = function (_alfrid$View) {
 	function ViewSimulation() {
 		_classCallCheck(this, ViewSimulation);
 
-		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ViewSimulation).call(this, _alfrid2.default.ShaderLibs.bigTriangleVert, "#define GLSLIFY 1\n// sim.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\nuniform float time;\nuniform float skipCount;\n\nvec3 mod289(vec3 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 mod289(vec4 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 permute(vec4 x) {\treturn mod289(((x*34.0)+1.0)*x);\t}\n\nvec4 taylorInvSqrt(vec4 r) {\treturn 1.79284291400159 - 0.85373472095314 * r;}\n\nfloat snoise(vec3 v) { \n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g;\n  vec3 i1 = min( g.xyz, l.zxy );\n  vec3 i2 = max( g.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i); \n  vec4 p = permute( permute( permute( \n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) \n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), \n                                dot(p2,x2), dot(p3,x3) ) );\n}\n\nvec3 snoiseVec3( vec3 x ){\n\n  float s  = snoise(vec3( x ));\n  float s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));\n  float s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));\n  vec3 c = vec3( s , s1 , s2 );\n  return c;\n\n}\n\nvec3 curlNoise( vec3 p ){\n  \n  const float e = .1;\n  vec3 dx = vec3( e   , 0.0 , 0.0 );\n  vec3 dy = vec3( 0.0 , e   , 0.0 );\n  vec3 dz = vec3( 0.0 , 0.0 , e   );\n\n  vec3 p_x0 = snoiseVec3( p - dx );\n  vec3 p_x1 = snoiseVec3( p + dx );\n  vec3 p_y0 = snoiseVec3( p - dy );\n  vec3 p_y1 = snoiseVec3( p + dy );\n  vec3 p_z0 = snoiseVec3( p - dz );\n  vec3 p_z1 = snoiseVec3( p + dz );\n\n  float x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;\n  float y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;\n  float z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;\n\n  const float divisor = 1.0 / ( 2.0 * e );\n  return normalize( vec3( x , y , z ) * divisor );\n\n}\n\nconst float maxRadius = 10.5;\n\n//  PARTICLES RELATED UNIFORMS\nuniform float posOffset;\nuniform float decreaseRate;\nuniform float timeOffset;\n\nvoid main(void) {\n\n    if(vTextureCoord.y < .5) {\n    \tif(vTextureCoord.x < .5) {\n        vec2 uvVel   = vTextureCoord + vec2(.5, .0);\n        vec2 uvExtra = vTextureCoord + vec2(0.0, .5);\n        vec3 pos     = texture2D(texture, vTextureCoord).rgb;\n        vec3 vel     = texture2D(texture, uvVel).rgb;\n        vec3 extra   = texture2D(texture, uvExtra).rgb;\n    \t\tpos += vel;\n    \t\t\n    \t\tif(length(pos) > maxRadius) {\n          vec2 uvOrgPos = vTextureCoord + vec2(.5, .5);\n          vec3 posOrg   = texture2D(texture, uvOrgPos).rgb;\n          pos           = posOrg;\n    \t\t}\n    \t\tgl_FragColor = vec4(pos, 1.0);\n\t\t} else {\n\t\t\t\n      vec2 uvPos      = vTextureCoord - vec2(.5, .0);\n      vec2 uvExtra    = vTextureCoord + vec2(-.5, .5);\n      vec3 pos        = texture2D(texture, uvPos).rgb;\n      vec3 vel        = texture2D(texture, vTextureCoord).rgb;\n      vec3 extra      = texture2D(texture, uvExtra).rgb;\n\n      float pOffset   = posOffset * mix(1.0, extra.r, .1);\n\t\t\tvec3 acc = curlNoise(pos * pOffset + time*timeOffset);\n      acc.xz += vec2(.5);\n      acc.y += .75;\n\t\t\t\n\t\t\tvel += acc * .001 * (skipCount+1.0) * mix(1.0, extra.b, .5);\n\n\t\t\tfloat decrease = decreaseRate;\n      if(length(pos) > maxRadius) {\n        decrease = 0.0;\n      }\n\t\t\tvel *= decrease;\n\n\t\t\tgl_FragColor = vec4(vel, 1.0);\n\t\t}\n\t} else {\n\t\tgl_FragColor = texture2D(texture, vTextureCoord);\n\t}\n}"));
+		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ViewSimulation).call(this, _alfrid2.default.ShaderLibs.bigTriangleVert, "#define GLSLIFY 1\n// sim.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texture;\nuniform float time;\nuniform float skipCount;\n\nvec3 mod289(vec3 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 mod289(vec4 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 permute(vec4 x) {\treturn mod289(((x*34.0)+1.0)*x);\t}\n\nvec4 taylorInvSqrt(vec4 r) {\treturn 1.79284291400159 - 0.85373472095314 * r;}\n\nfloat snoise(vec3 v) { \n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n// First corner\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n// Other corners\n  vec3 g = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g;\n  vec3 i1 = min( g.xyz, l.zxy );\n  vec3 i2 = max( g.xyz, l.zxy );\n\n  //   x0 = x0 - 0.0 + 0.0 * C.xxx;\n  //   x1 = x0 - i1  + 1.0 * C.xxx;\n  //   x2 = x0 - i2  + 2.0 * C.xxx;\n  //   x3 = x0 - 1.0 + 3.0 * C.xxx;\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n// Permutations\n  i = mod289(i); \n  vec4 p = permute( permute( permute( \n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) \n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n// Gradients: 7x7 points over a square, mapped onto an octahedron.\n// The ring size 17*17 = 289 is close to a multiple of 49 (49*6 = 294)\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  //vec4 s0 = vec4(lessThan(b0,0.0))*2.0 - 1.0;\n  //vec4 s1 = vec4(lessThan(b1,0.0))*2.0 - 1.0;\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n//Normalise gradients\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n// Mix final noise value\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), \n                                dot(p2,x2), dot(p3,x3) ) );\n}\n\nvec3 snoiseVec3( vec3 x ){\n\n  float s  = snoise(vec3( x ));\n  float s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));\n  float s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));\n  vec3 c = vec3( s , s1 , s2 );\n  return c;\n\n}\n\nvec3 curlNoise( vec3 p ){\n  \n  const float e = .1;\n  vec3 dx = vec3( e   , 0.0 , 0.0 );\n  vec3 dy = vec3( 0.0 , e   , 0.0 );\n  vec3 dz = vec3( 0.0 , 0.0 , e   );\n\n  vec3 p_x0 = snoiseVec3( p - dx );\n  vec3 p_x1 = snoiseVec3( p + dx );\n  vec3 p_y0 = snoiseVec3( p - dy );\n  vec3 p_y1 = snoiseVec3( p + dy );\n  vec3 p_z0 = snoiseVec3( p - dz );\n  vec3 p_z1 = snoiseVec3( p + dz );\n\n  float x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;\n  float y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;\n  float z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;\n\n  const float divisor = 1.0 / ( 2.0 * e );\n  return normalize( vec3( x , y , z ) * divisor );\n\n}\n\nconst float maxRadius = 10.5;\n\n//  PARTICLES RELATED UNIFORMS\nuniform float posOffset;\nuniform float decreaseRate;\nuniform float timeOffset;\n\nvoid main(void) {\n\n    if(vTextureCoord.y < .5) {\n    \tif(vTextureCoord.x < .5) {\n        vec2 uvVel   = vTextureCoord + vec2(.5, .0);\n        vec2 uvExtra = vTextureCoord + vec2(0.0, .5);\n        vec3 pos     = texture2D(texture, vTextureCoord).rgb;\n        vec3 vel     = texture2D(texture, uvVel).rgb;\n        vec3 extra   = texture2D(texture, uvExtra).rgb;\n    \t\tpos += vel;\n    \t\t\n    \t\tif(length(pos) > maxRadius) {\n          vec2 uvOrgPos = vTextureCoord + vec2(.5, .5);\n          vec3 posOrg   = texture2D(texture, uvOrgPos).rgb;\n          pos           = posOrg;\n    \t\t}\n    \t\tgl_FragColor = vec4(pos, 1.0);\n\t\t} else {\n\t\t\t\n      vec2 uvPos      = vTextureCoord - vec2(.5, .0);\n      vec2 uvExtra    = vTextureCoord + vec2(-.5, .5);\n      vec3 pos        = texture2D(texture, uvPos).rgb;\n      vec3 vel        = texture2D(texture, vTextureCoord).rgb;\n      vec3 extra      = texture2D(texture, uvExtra).rgb;\n\n      float pOffset   = posOffset * mix(1.0, extra.r, .1);\n\t\t\tvec3 acc = curlNoise(pos * pOffset + time*timeOffset);\n      acc.xz += vec2(.25);\n      acc.y += .25;\n\t\t\t\n\t\t\tvel += acc * .001 * (skipCount+1.0) * mix(1.0, extra.b, .5);\n\n      const float minY = .5;\n      if(pos.y < minY) {\n        vel.y += (minY-pos.y) * .4;\n      }\n\n\t\t\tfloat decrease = decreaseRate;\n      if(length(pos) > maxRadius) {\n        decrease = 0.0;\n      }\n\t\t\tvel *= decrease;\n\n\t\t\tgl_FragColor = vec4(vel, 1.0);\n\t\t}\n\t} else {\n\t\tgl_FragColor = texture2D(texture, vTextureCoord);\n\t}\n}"));
 
 		_this.time = Math.random() * 0xFF;
 
@@ -5900,7 +6092,7 @@ var ViewSimulation = function (_alfrid$View) {
 
 exports.default = ViewSimulation;
 
-},{"./libs/alfrid.js":19}],16:[function(require,module,exports){
+},{"./libs/alfrid.js":20}],17:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -5956,7 +6148,7 @@ var ViewSkybox = function (_alfrid$View) {
 
 exports.default = ViewSkybox;
 
-},{"./libs/alfrid.js":19}],17:[function(require,module,exports){
+},{"./libs/alfrid.js":20}],18:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -5988,7 +6180,7 @@ var ViewTree = function (_alfrid$View) {
 
 		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ViewTree).call(this, "#define GLSLIFY 1\n// reflection.vert\n\n#define SHADER_NAME REFLECTION_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat3 uNormalMatrix;\nuniform mat3 uModelViewMatrixInverse;\nuniform float scale;\n\nvarying vec2 vTextureCoord;\n\nvarying vec3 vNormal;\nvarying vec3 vPosition;\nvarying vec3 vWsPosition;\nvarying vec3 vEyePosition;\nvarying vec3 vWsNormal;\n\nvarying vec3 vNormalWorldSpace;\nvarying vec3 vEyeDirWorldSpace;\n\nvoid main(void) {\n\tvec3 position \t\t\t= aVertexPosition * scale;\n\tvec4 worldSpacePosition\t= uModelMatrix * vec4(position, 1.0);\n    vec4 viewSpacePosition\t= uViewMatrix * worldSpacePosition;\n\t\n    vNormal\t\t\t\t\t= uNormalMatrix * aNormal;\n    vPosition\t\t\t\t= viewSpacePosition.xyz;\n\tvWsPosition\t\t\t\t= worldSpacePosition.xyz;\n\t\n\tvec4 eyeDirViewSpace\t= viewSpacePosition - vec4( 0, 0, 0, 1 );\n\tvEyePosition\t\t\t= -vec3( uModelViewMatrixInverse * eyeDirViewSpace.xyz );\n\tvWsNormal\t\t\t\t= normalize( uModelViewMatrixInverse * vNormal );\n\t\n    gl_Position\t\t\t\t= uProjectionMatrix * viewSpacePosition;\n\n\tvTextureCoord\t\t\t= aTextureCoord;\n\n\t//\ttest code\n\t// vec4 eyeDirViewSpace   = viewSpacePosition - vec4( 0, 0, 0, 1 );\n\tvEyeDirWorldSpace      = vec3( uModelViewMatrixInverse * eyeDirViewSpace.rgb );\n\tvec3 normalViewSpace   = uNormalMatrix * aNormal;\n\tvNormalWorldSpace      = normalize( vec3( vec4( normalViewSpace, 0 ) * uViewMatrix ) );\t\t\n}\n", "// pbr.frag\n\n#extension GL_EXT_shader_texture_lod : enable\n#define GLSLIFY 1\n\nprecision highp float;\n\nuniform samplerCube uRadianceMap;\nuniform samplerCube uIrradianceMap;\n\nuniform vec3\t\tuBaseColor;\nuniform float\t\tuRoughness;\nuniform float\t\tuRoughness4;\nuniform float\t\tuMetallic;\nuniform float\t\tuSpecular;\n\nuniform float\t\tuExposure;\nuniform float\t\tuGamma;\n\nvarying vec3        vNormal;\nvarying vec3        vPosition;\nvarying vec3\t\tvEyePosition;\nvarying vec3\t\tvWsNormal;\nvarying vec3\t\tvWsPosition;\n\nvarying vec3 vNormalWorldSpace;\nvarying vec3 vEyeDirWorldSpace;\n\n#define saturate(x) clamp(x, 0.0, 1.0)\n#define PI 3.1415926535897932384626433832795\n\n// Filmic tonemapping from\n// http://filmicgames.com/archives/75\n\nconst float A = 0.15;\nconst float B = 0.50;\nconst float C = 0.10;\nconst float D = 0.20;\nconst float E = 0.02;\nconst float F = 0.30;\n\nvec3 Uncharted2Tonemap( vec3 x )\n{\n\treturn ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;\n}\n\n// https://www.unrealengine.com/blog/physically-based-shading-on-mobile\nvec3 EnvBRDFApprox( vec3 SpecularColor, float Roughness, float NoV )\n{\n\tconst vec4 c0 = vec4( -1, -0.0275, -0.572, 0.022 );\n\tconst vec4 c1 = vec4( 1, 0.0425, 1.04, -0.04 );\n\tvec4 r = Roughness * c0 + c1;\n\tfloat a004 = min( r.x * r.x, exp2( -9.28 * NoV ) ) * r.x + r.y;\n\tvec2 AB = vec2( -1.04, 1.04 ) * a004 + r.zw;\n\treturn SpecularColor * AB.x + AB.y;\n}\n\n// http://the-witness.net/news/2012/02/seamless-cube-map-filtering/\nvec3 fix_cube_lookup( vec3 v, float cube_size, float lod ) {\n\tfloat M = max(max(abs(v.x), abs(v.y)), abs(v.z));\n\tfloat scale = 1.0 - exp2(lod) / cube_size;\n\tif (abs(v.x) != M) v.x *= scale;\n\tif (abs(v.y) != M) v.y *= scale;\n\tif (abs(v.z) != M) v.z *= scale;\n\treturn v;\n}\n\nvec3 correctGamma(vec3 color, float g) {\n\treturn pow(color, vec3(1.0/g));\n}\n\nvoid main() {\n\t\n\tvec3 N \t\t\t\t= normalize( vWsNormal );\n\tvec3 V \t\t\t\t= normalize( vEyePosition );\n\t\n\t// deduce the diffuse and specular color from the baseColor and how metallic the material is\n\tvec3 diffuseColor\t= uBaseColor - uBaseColor * uMetallic;\n\tvec3 specularColor\t= mix( vec3( 0.08 * uSpecular ), uBaseColor, uMetallic );\n\t\n\tvec3 color;\n\t\n\t// sample the pre-filtered cubemap at the corresponding mipmap level\n\tfloat numMips\t\t= 6.0;\n\tfloat mip\t\t\t= numMips - 1.0 + log2(uRoughness);\n\tvec3 lookup\t\t\t= -reflect( V, N );\n\tlookup\t\t\t\t= fix_cube_lookup( lookup, 512.0, mip );\n\tvec3 radiance\t\t= pow( textureCubeLodEXT( uRadianceMap, lookup, mip ).rgb, vec3( 2.2 ) );\n\tvec3 irradiance\t\t= pow( textureCube( uIrradianceMap, N ).rgb, vec3( 1 ) );\n\t\n\t// get the approximate reflectance\n\tfloat NoV\t\t\t= saturate( dot( N, V ) );\n\tvec3 reflectance\t= EnvBRDFApprox( specularColor, uRoughness4, NoV );\n\t\n\t// combine the specular IBL and the BRDF\n    vec3 diffuse  \t\t= diffuseColor * irradiance;\n    vec3 specular \t\t= radiance * reflectance;\n\tcolor\t\t\t\t= diffuse + specular;\n\t\n\n\t\n\n\t// color = irradiance;\n\n\t// apply the tone-mapping\n\tcolor\t\t\t\t= Uncharted2Tonemap( color * uExposure );\n\t// white balance\n\tcolor\t\t\t\t= color * ( 1.0 / Uncharted2Tonemap( vec3( 20.0 ) ) );\n\t\n\t// gamma correction\n\tcolor\t\t\t\t= pow( color, vec3( 1.0 / uGamma ) );\n\n\t// output the fragment color\n    gl_FragColor\t\t= vec4( color, 1.0 );\n\n}"));
 
-		_this.color = [117 / 255 * .35, 105 / 255 * .35, 109 / 255 * .35];
+		_this.color = [117 / 255 * .135, 105 / 255 * .135, 109 / 255 * .135];
 
 		_this.roughness = 1.0;
 		_this.specular = 0.1;
@@ -6047,7 +6239,7 @@ var ViewTree = function (_alfrid$View) {
 
 exports.default = ViewTree;
 
-},{"./libs/alfrid.js":19}],18:[function(require,module,exports){
+},{"./libs/alfrid.js":20}],19:[function(require,module,exports){
 'use strict';
 
 var _alfrid = require('./libs/alfrid.js');
@@ -6071,7 +6263,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var assets = [{ id: 'posx', url: 'assets/px.png' }, { id: 'posy', url: 'assets/py.png' }, { id: 'posz', url: 'assets/pz.png' }, { id: 'negx', url: 'assets/nx.png' }, { id: 'negy', url: 'assets/ny.png' }, { id: 'negz', url: 'assets/nz.png' }, { id: 'irr_posx', url: 'assets/irr_posx.hdr', type: 'binary' }, { id: 'irr_posy', url: 'assets/irr_posy.hdr', type: 'binary' }, { id: 'irr_posz', url: 'assets/irr_posz.hdr', type: 'binary' }, { id: 'irr_negx', url: 'assets/irr_negx.hdr', type: 'binary' }, { id: 'irr_negy', url: 'assets/irr_negy.hdr', type: 'binary' }, { id: 'irr_negz', url: 'assets/irr_negz.hdr', type: 'binary' }, { id: 'rad_posx', url: 'assets/rad_posx.hdr', type: 'binary' }, { id: 'rad_posy', url: 'assets/rad_posy.hdr', type: 'binary' }, { id: 'rad_posz', url: 'assets/rad_posz.hdr', type: 'binary' }, { id: 'rad_negx', url: 'assets/rad_negx.hdr', type: 'binary' }, { id: 'rad_negy', url: 'assets/rad_negy.hdr', type: 'binary' }, { id: 'rad_negz', url: 'assets/rad_negz.hdr', type: 'binary' }];
 
 window.params = {
-	numParticles: 512,
+	numParticles: 256 * 2,
 	treeScale: 8,
 	skipCount: 5,
 	metallic: 0,
@@ -6087,13 +6279,19 @@ window.params = {
 	}
 };
 
-if (document.body) {
-	_init();
-} else {
-	window.addEventListener('load', function () {
-		return _init();
-	});
-}
+var imagePetal = new Image();
+imagePetal.onload = function () {
+	window.imgPetal = imagePetal;
+
+	if (document.body) {
+		_init();
+	} else {
+		window.addEventListener('load', function () {
+			return _init();
+		});
+	}
+};
+imagePetal.src = 'assets/petal.png';
 
 function _init() {
 	document.body.classList.add('isLoading');
@@ -6130,7 +6328,7 @@ function _onImageLoaded(o) {
 	var scene = new _SceneApp2.default();
 }
 
-},{"./SceneApp":11,"./libs/alfrid.js":19,"assets-loader":4,"dat-gui":7}],19:[function(require,module,exports){
+},{"./SceneApp":11,"./libs/alfrid.js":20,"assets-loader":4,"dat-gui":7}],20:[function(require,module,exports){
 (function (global){
 "use strict";var _typeof=typeof Symbol==="function"&&typeof Symbol.iterator==="symbol"?function(obj){return typeof obj;}:function(obj){return obj&&typeof Symbol==="function"&&obj.constructor===Symbol?"symbol":typeof obj;};(function(f){if((typeof exports==="undefined"?"undefined":_typeof(exports))==="object"&&typeof module!=="undefined"){module.exports=f();}else if(typeof define==="function"&&define.amd){define([],f);}else {var g;if(typeof window!=="undefined"){g=window;}else if(typeof global!=="undefined"){g=global;}else if(typeof self!=="undefined"){g=self;}else {g=this;}g.alfrid=f();}})(function(){var define,module,exports;return function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f;}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e);},l,l.exports,e,t,n,r);}return n[o].exports;}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++){s(r[o]);}return s;}({1:[function(_dereq_,module,exports){ /**
  * @fileoverview gl-matrix - High performance matrix and vector operations
@@ -8068,6 +8266,6 @@ break;}}this._highTasks=this._highTasks.concat(this._nextTasks);this._nextTasks=
 'use strict';Object.defineProperty(exports,"__esModule",{value:true});var ShaderLibs={simpleColorFrag:"#define GLSLIFY 1\n// simpleColor.frag\n\n#define SHADER_NAME SIMPLE_COLOR\n\nprecision highp float;\n\nuniform vec3 color;\nuniform float opacity;\n\nvoid main(void) {\n    gl_FragColor = vec4(color, opacity);\n}",bigTriangleVert:"#define GLSLIFY 1\n// bigTriangle.vert\n\n#define SHADER_NAME BIG_TRIANGLE_VERTEX\n\nprecision highp float;\nattribute vec2 aPosition;\nvarying vec2 vTextureCoord;\n\nvoid main(void) {\n    gl_Position = vec4(aPosition, 0.0, 1.0);\n    vTextureCoord = aPosition * .5 + .5;\n}",generalVert:"#define GLSLIFY 1\n// general.vert\n\n#define SHADER_NAME GENERAL_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\n\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\n\nvoid main(void) {\n\tvec3 pos      = aVertexPosition * scale;\n\tpos           += position;\n\tgl_Position   = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\tvTextureCoord = aTextureCoord;\n}",generalNormalVert:"#define GLSLIFY 1\n// generalWithNormal.vert\n\n#define SHADER_NAME GENERAL_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat3 uNormalMatrix;\n\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\n\nvoid main(void) {\n\tvec3 pos      = aVertexPosition * scale;\n\tpos           += position;\n\tgl_Position   = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\t\n\tvTextureCoord = aTextureCoord;\n\tvNormal       = normalize(uNormalMatrix * aNormal);\n}"};exports.default=ShaderLibs;},{}]},{},[11])(11);}); 
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[18]);
+},{}]},{},[19]);
 
 //# sourceMappingURL=bundle.js.map

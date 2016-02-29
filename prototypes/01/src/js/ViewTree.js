@@ -8,7 +8,7 @@ class ViewTree extends alfrid.View {
 	
 	constructor() {
 		super(glslify('../shaders/pbr.vert'), glslify('../shaders/pbr.frag'));
-		this.color = [117/255*.35, 105/255*.35, 109/255*.35];
+		this.color = [117/255*.135, 105/255*.135, 109/255*.135];
 
 		this.roughness = 1.0;
 		this.specular = 0.1;
