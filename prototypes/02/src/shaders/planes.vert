@@ -15,6 +15,7 @@ uniform float percent;
 uniform float uvIndex;
 uniform vec2 uvOffset;
 uniform float numSlices;
+uniform float blossom;
 
 varying vec4 vColor;
 varying vec2 vPointCoord;
@@ -28,14 +29,18 @@ void main(void) {
 
 
 	float l = length(posCurr);
-	if(length(posNext) < l && l > 10.0) {
+	if(length(posNext) < l && l > 8.0) {
 		offset = 0.0;
 	}
 	vec3 pos        = mix(posCurr, posNext, percent);
 	vec3 extra      = texture2D(textureExtra, uv).rgb;
 	
 	vec4 mvPosition = uViewMatrix * uModelMatrix * vec4(pos, 1.0);
-	mvPosition.xyz  += aVertexPosition;
+	float blossomOffset = blossom * 2.0 - extra.y;
+	blossomOffset = smoothstep(0.0, 1.0, blossomOffset);
+
+
+	mvPosition.xyz  += aVertexPosition * blossomOffset;
 	
 	gl_Position     = uProjectionMatrix * mvPosition;
 	

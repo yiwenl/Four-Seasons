@@ -3,9 +3,10 @@ import SceneApp from './SceneApp';
 import AssetsLoader from 'assets-loader';
 import dat from 'dat-gui';
 
+let fog = 220;
 
 window.params = {
-	numParticles:128*2,
+	numParticles:128*3,
 	skipCount:10,
 	range:1.2,
 	speed:1.5,
@@ -13,7 +14,10 @@ window.params = {
 	minThreshold:.50,
 	maxThreshold:.80,
 	isInvert:false,
-	numSlices:2
+	numSlices:3,
+	fogColor:[fog,fog,fog],
+	fogDistanceOffset:1.5,
+	blossom:0
 };
 
 let assets = [
@@ -60,8 +64,12 @@ function _onImageLoaded(o) {
 	//	INIT SCENE
 	let scene = new SceneApp();
 
-	/*/
+
 	let gui = new dat.GUI({width:300});
+	gui.add(params, 'fogDistanceOffset', 0, 2);
+	gui.add(params, 'blossom', 0, 1);
+	/*/
+	
 	gui.add(params, 'focus', 0, 1);
 	gui.add(params, 'range', 0, 2);
 	gui.add(params, 'speed', 0, 100.5);

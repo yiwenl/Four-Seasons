@@ -16,11 +16,12 @@ class ViewFloor extends alfrid.View {
 		const offset = .16;
 
 		let positions = [];
-		let coords = [];
-		let indices = []; 
-		let count = 0;
-		let numSeg = 50;
-		let size = 40;
+		let coords    = [];
+		let indices   = []; 
+		let normals   = [];
+		let count     = 0;
+		let numSeg    = 50;
+		let size      = 40;
 
 
 		function leng(x, y) {
@@ -40,6 +41,25 @@ class ViewFloor extends alfrid.View {
 			return [x, y+n*2.20, z];
 		}
 
+
+		function getNormal(i, j) {
+			let p0 = vec3.clone(getPos(i, j));
+			let p1 = vec3.clone(getPos(i+1, j));
+			let p2 = vec3.clone(getPos(i, j+1));
+
+			let v0 = vec3.create();
+			let v1 = vec3.create();
+			vec3.sub(v0, p1, p0);
+			vec3.sub(v1, p2, p0);
+
+			let n = vec3.create();
+			vec3.cross(n, v1, v0);
+			vec3.normalize(n, n);
+
+			return n;
+		}
+
+
 		let y = -3;
 
 		for(let j=0; j<numSeg; j++) {
@@ -48,6 +68,11 @@ class ViewFloor extends alfrid.View {
 				positions.push( getPos(i+1, j+1, y));
 				positions.push( getPos(i+1, j, y));
 				positions.push( getPos(i, j, y));
+
+				normals.push( getNormal(i, j+1, y));
+				normals.push( getNormal(i+1, j+1, y));
+				normals.push( getNormal(i+1, j, y));
+				normals.push( getNormal(i, j, y));
 
 				coords.push([i/numSeg, (j+1)/numSeg]);
 				coords.push([(i+1)/numSeg, (j+1)/numSeg]);
@@ -69,16 +94,19 @@ class ViewFloor extends alfrid.View {
 		this.mesh.bufferVertex(positions);
 		this.mesh.bufferTexCoords(coords);
 		this.mesh.bufferIndices(indices);
+		this.mesh.bufferNormal(normals);
 
 		this.shader.bind();
 		let grey = .928;
 		this.shader.uniform("color", "uniform3fv", [grey, grey, grey]);
+		this.shader.uniform("fogColor", "uniform3fv", params.fogColor);
 		this.shader.uniform("opacity", "uniform1f", 1);
 	}
 
 
 	render(shadowMatrix, lightPosition, textureDepth) {
 		this.shader.bind();
+		this.shader.uniform("fogDistanceOffset", "uniform1f", params.fogDistanceOffset);
 		this.shader.uniform("lightPosition", "uniform3fv", lightPosition);
 		this.shader.uniform("uShadowMatrix", "uniformMatrix4fv", shadowMatrix);
 		this.shader.uniform("textureDepth", "uniform1i", 0);

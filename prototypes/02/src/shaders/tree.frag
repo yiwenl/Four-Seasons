@@ -6,8 +6,8 @@
 precision highp float;
 varying vec2 vTextureCoord;
 varying vec3 vNormal;
+uniform vec3 lightPosition;
 uniform sampler2D texture;
-uniform mat3 uNormalMatrix;
 
 const vec3 UP = vec3(0.0, 1.0, 0.0);
 const float PI = 3.141592657;
@@ -42,15 +42,12 @@ vec3 diffuse(vec3 N, vec3 L, vec3 C) {
 }
 
 
-const vec3 LIGHT = vec3( 1.0 );
-
-
 void main(void) {
 	vec3 ao      = texture2D(texture, vTextureCoord).rgb;
 	ao = contrast(ao, 3.0, .75);
 	float a      = angleBetween(vNormal, UP);
 	a            = 1.0 - smoothstep(0.0, PI * .75, a);
 
-	float _diffuse = diffuse(uNormalMatrix*vNormal, LIGHT) * .5;
+	float _diffuse = diffuse(vNormal, lightPosition) * .5;
 	gl_FragColor = vec4(vec3(a)+ao + _diffuse, 1.0);
 }

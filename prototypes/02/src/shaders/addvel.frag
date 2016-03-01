@@ -15,7 +15,7 @@ void main(void) {
 
 	pos += vel;
 
-	if(length(pos) > 15.0) {
+	if(length(pos) > 10.0) {
 		pos = posOrg;
 	}
 

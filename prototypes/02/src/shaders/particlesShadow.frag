@@ -103,6 +103,9 @@ vec4 pcfShadow(sampler2D uShadowMap) {
 	return shadow/9.0;
 }
 
+
+
+
 void main(void) {
 	if(vColor.a <= 0.01) {
 		discard;
@@ -112,11 +115,7 @@ void main(void) {
 	}
 	
 	float pcf = pcfSoftShadow(textureDepth);
-	// vec4 pcfProject = pcfShadow(textureDepth);
 	pcf = 1.0 - smoothstep(0.0, .5, pcf);
-	gl_FragColor = vec4( color*pcf, 1.0);
-	// gl_FragColor = vec4( color, 1.0);
-	// gl_FragColor = vec4( vec3(pcf), 1.0);
-	// gl_FragColor = pcfProject;
+	gl_FragColor = vec4( color*pcf, vColor.a);
 
 }

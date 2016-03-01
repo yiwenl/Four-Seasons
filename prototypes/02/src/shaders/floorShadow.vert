@@ -5,6 +5,7 @@
 precision highp float;
 attribute vec3 aVertexPosition;
 attribute vec2 aTextureCoord;
+attribute vec3 aNormal;
 
 uniform mat4 uModelMatrix;
 uniform mat4 uViewMatrix;
@@ -15,6 +16,8 @@ uniform mat3 uNormalMatrix;
 varying vec2 vTextureCoord;
 varying vec4 vShadowCoord;
 varying vec4 vPosition;
+varying vec3 vNormal;
+varying vec3 vVertex;
 
 const mat4 biasMatrix = mat4( 0.5, 0.0, 0.0, 0.0,
 							  0.0, 0.5, 0.0, 0.0,
@@ -29,4 +32,6 @@ void main(void) {
 	vShadowCoord    = ( biasMatrix * uShadowMatrix * uModelMatrix ) * vec4(aVertexPosition, 1.0);
 	
 	vTextureCoord   = aTextureCoord;
+	vNormal         = aNormal;
+	vVertex         = aVertexPosition;
 }

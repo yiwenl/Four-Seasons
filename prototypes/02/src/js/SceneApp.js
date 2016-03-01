@@ -17,6 +17,7 @@ let GL = alfrid.GL;;
 class SceneApp extends alfrid.Scene {
 	constructor() {
 		super();
+		GL.enableAlphaBlending();
 		// this.orbitalControl._rx.value = 0.0;
 		// this.orbitalControl._rx.limit(0, .36);
 		// this.orbitalControl.radius.setTo(10);
@@ -29,8 +30,8 @@ class SceneApp extends alfrid.Scene {
 		this._hasSaved = false;
 
 		// this._lightPosition = [12.5, 25, -12.5];
-		this._lightPosition = [-5.5, 20, 5.5];
-		// this._lightPosition = [-0.5, 30, 0.5];
+		// this._lightPosition = [-5.5, 20, 5.5];
+		this._lightPosition = [-2.5, 15, 2.5];
 		this.shadowMatrix  = mat4.create();
 		this.cameraLight   = new alfrid.CameraPerspective();
 		let fov            = Math.PI * .65;
@@ -78,7 +79,7 @@ class SceneApp extends alfrid.Scene {
 		this._vSim    = new ViewSimulation();
 		this._vAddVel = new ViewAddVel();
 		this._vFloor  = new ViewFloor();
-		// this._vDome   = new ViewDome();
+		this._vDome   = new ViewDome();
 		this._vPlanes = new ViewPlanes();
 		this._vPost   = new ViewPost();
 		this._vTree   = new ViewTree();
@@ -161,27 +162,26 @@ class SceneApp extends alfrid.Scene {
 		for (let i=0; i<num; i++) {
 			this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p, i);
 		}
-		this._vTree.render(this._textureAO);
+		this._vTree.render(this._textureAO, this._lightPosition);
 		this._fboShadowMap.unbind();
 
 
 		GL.setMatrices(this.camera);
 		
+		this._vDome.render();
+		this._vFloor.render(this.shadowMatrix, this._lightPosition, this._fboShadowMap.getDepthTexture());
+		this._vTree.render(this._textureAO, this._lightPosition);
+		this._vBall.render(this._lightPosition, 1, [1, .75, 0.5], 1);
+		
 		for (let i=0; i<num; i++) {
 			this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p, i, this.shadowMatrix, this._lightPosition, this._fboShadowMap.getDepthTexture());
-			// this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p, i);
 		}
 		
-		this._vFloor.render(this.shadowMatrix, this._lightPosition, this._fboShadowMap.getDepthTexture());
-		this._vTree.render(this._textureAO);
-		this._vBall.render(this._lightPosition, 1, [1, .75, 0.5], 1);
-
-
-		GL.disable(GL.DEPTH_TEST);
-		let size = 200;
-		GL.viewport(0, 0, size, size);
-		this._bCopy.draw(this._fboShadowMap.getDepthTexture());
-		GL.enable(GL.DEPTH_TEST);
+		// GL.disable(GL.DEPTH_TEST);
+		// let size = 200;
+		// GL.viewport(0, 0, size, size);
+		// this._bCopy.draw(this._fboShadowMap.getDepthTexture());
+		// GL.enable(GL.DEPTH_TEST);
 	}
 
 

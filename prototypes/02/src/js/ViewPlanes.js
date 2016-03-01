@@ -4,6 +4,7 @@
 import alfrid from './libs/alfrid.js';
 let GL = alfrid.GL;
 let glslify = require("glslify");
+var random = function(min, max) { return min + Math.random() * (max - min);	}
 
 class ViewPlanes extends alfrid.View {
 	
@@ -26,10 +27,11 @@ class ViewPlanes extends alfrid.View {
 		let pointCoords  = [];
 		let indices      = [];
 		let count        = 0;
-		let size         = 0.03;
+		
 
 		for(let j=0; j<num; j++) {
 			for(let i=0; i<num; i++) {
+				let size         = random(0.01, 0.02);
 				positions.push([-size,  size, 0]);
 				positions.push([ size,  size, 0]);
 				positions.push([ size, -size, 0]);
@@ -79,6 +81,7 @@ class ViewPlanes extends alfrid.View {
 		textureNext.bind(1);
 		textureExtra.bind(2);
 		shader.uniform("percent", "uniform1f", percent);
+		shader.uniform("blossom", "uniform1f", params.blossom);
 		shader.uniform("uvIndex", "uniform1f", index);
 		shader.uniform("uvOffset", "uniform2fv", [x, y]);
 

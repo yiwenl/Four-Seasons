@@ -5733,14 +5733,14 @@ var SceneApp = function (_alfrid$Scene) {
 	function SceneApp() {
 		_classCallCheck(this, SceneApp);
 
+		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SceneApp).call(this));
+
+		GL.enableAlphaBlending();
 		// this.orbitalControl._rx.value = 0.0;
 		// this.orbitalControl._rx.limit(0, .36);
 		// this.orbitalControl.radius.setTo(10);
 		// this.orbitalControl.radius.value = 8;
 		// this.orbitalControl.radius.limit(1, 11);
-
-		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SceneApp).call(this));
-
 		_this.orbitalControl.center[1] = 3;
 		_this.orbitalControl.positionOffset[1] = -.5;
 
@@ -5748,8 +5748,8 @@ var SceneApp = function (_alfrid$Scene) {
 		_this._hasSaved = false;
 
 		// this._lightPosition = [12.5, 25, -12.5];
-		_this._lightPosition = [-5.5, 20, 5.5];
-		// this._lightPosition = [-0.5, 30, 0.5];
+		// this._lightPosition = [-5.5, 20, 5.5];
+		_this._lightPosition = [-2.5, 15, 2.5];
 		_this.shadowMatrix = mat4.create();
 		_this.cameraLight = new _alfrid2.default.CameraPerspective();
 		var fov = Math.PI * .65;
@@ -5799,7 +5799,7 @@ var SceneApp = function (_alfrid$Scene) {
 			this._vSim = new _ViewSimulation2.default();
 			this._vAddVel = new _ViewAddVel2.default();
 			this._vFloor = new _ViewFloor2.default();
-			// this._vDome   = new ViewDome();
+			this._vDome = new _ViewDome2.default();
 			this._vPlanes = new _ViewPlanes2.default();
 			this._vPost = new _ViewPost2.default();
 			this._vTree = new _ViewTree2.default();
@@ -5880,25 +5880,25 @@ var SceneApp = function (_alfrid$Scene) {
 			for (var i = 0; i < num; i++) {
 				this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p, i);
 			}
-			this._vTree.render(this._textureAO);
+			this._vTree.render(this._textureAO, this._lightPosition);
 			this._fboShadowMap.unbind();
 
 			GL.setMatrices(this.camera);
 
-			for (var i = 0; i < num; i++) {
-				this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p, i, this.shadowMatrix, this._lightPosition, this._fboShadowMap.getDepthTexture());
-				// this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p, i);
-			}
-
+			this._vDome.render();
 			this._vFloor.render(this.shadowMatrix, this._lightPosition, this._fboShadowMap.getDepthTexture());
-			this._vTree.render(this._textureAO);
+			this._vTree.render(this._textureAO, this._lightPosition);
 			this._vBall.render(this._lightPosition, 1, [1, .75, 0.5], 1);
 
-			GL.disable(GL.DEPTH_TEST);
-			var size = 200;
-			GL.viewport(0, 0, size, size);
-			this._bCopy.draw(this._fboShadowMap.getDepthTexture());
-			GL.enable(GL.DEPTH_TEST);
+			for (var i = 0; i < num; i++) {
+				this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p, i, this.shadowMatrix, this._lightPosition, this._fboShadowMap.getDepthTexture());
+			}
+
+			// GL.disable(GL.DEPTH_TEST);
+			// let size = 200;
+			// GL.viewport(0, 0, size, size);
+			// this._bCopy.draw(this._fboShadowMap.getDepthTexture());
+			// GL.enable(GL.DEPTH_TEST);
 		}
 	}, {
 		key: 'resize',
@@ -5946,7 +5946,7 @@ var ViewAddVel = function (_alfrid$View) {
 	function ViewAddVel() {
 		_classCallCheck(this, ViewAddVel);
 
-		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewAddVel).call(this, _alfrid2.default.ShaderLibs.bigTriangleVert, "#define GLSLIFY 1\n// addvel.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texturePos;\nuniform sampler2D textureVel;\nuniform sampler2D textureOrg;\n\nvoid main(void) {\n\tvec3 pos = texture2D(texturePos, vTextureCoord).rgb;\n\tvec3 posOrg = texture2D(textureOrg, vTextureCoord).rgb;\n\tvec3 vel = texture2D(textureVel, vTextureCoord).rgb;\n\n\tpos += vel;\n\n\tif(length(pos) > 15.0) {\n\t\tpos = posOrg;\n\t}\n\n    gl_FragColor = vec4(pos, 1.0);\n}"));
+		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewAddVel).call(this, _alfrid2.default.ShaderLibs.bigTriangleVert, "#define GLSLIFY 1\n// addvel.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D texturePos;\nuniform sampler2D textureVel;\nuniform sampler2D textureOrg;\n\nvoid main(void) {\n\tvec3 pos = texture2D(texturePos, vTextureCoord).rgb;\n\tvec3 posOrg = texture2D(textureOrg, vTextureCoord).rgb;\n\tvec3 vel = texture2D(textureVel, vTextureCoord).rgb;\n\n\tpos += vel;\n\n\tif(length(pos) > 10.0) {\n\t\tpos = posOrg;\n\t}\n\n    gl_FragColor = vec4(pos, 1.0);\n}"));
 	}
 
 	_createClass(ViewAddVel, [{
@@ -6038,7 +6038,7 @@ var ViewBall = function (_alfrid$View) {
 exports.default = ViewBall;
 
 },{"./libs/alfrid.js":26}],18:[function(require,module,exports){
-"use strict";
+'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -6046,7 +6046,7 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
-var _alfrid = require("./libs/alfrid.js");
+var _alfrid = require('./libs/alfrid.js');
 
 var _alfrid2 = _interopRequireDefault(_alfrid);
 
@@ -6067,23 +6067,25 @@ var ViewDome = function (_alfrid$View) {
 	function ViewDome() {
 		_classCallCheck(this, ViewDome);
 
-		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewDome).call(this, null, _alfrid2.default.ShaderLibs.simpleColorFrag));
+		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewDome).call(this, null, "#define GLSLIFY 1\n// dome.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform vec3 color;\nuniform vec3 fogColor;\nuniform float opacity;\nuniform float fogDistanceOffset;\n\n#define FOG_DENSITY 0.05\n\nfloat fogFactorExp2(const float dist, const float density) {\n\tconst float LOG2 = -1.442695;\n\tfloat d = density * dist;\n\treturn 1.0 - clamp(exp2(d * d * LOG2), 0.0, 1.0);\n}\n\nvoid main(void) {\n    float fogDistance = gl_FragCoord.z / gl_FragCoord.w;\n\tfloat fogAmount = fogFactorExp2(fogDistance*fogDistanceOffset, FOG_DENSITY);\n\n\tvec3 finalColor = color;\n\tfloat t = abs(vTextureCoord.y - .5) / .5;\n\tt = mix(t, 1.0, .8);\n\tfinalColor *= t;\n\n\tfinalColor = mix(finalColor, fogColor/255.0, fogAmount);\n\tgl_FragColor = vec4(finalColor, opacity); \n}"));
 	}
 
 	_createClass(ViewDome, [{
-		key: "_init",
+		key: '_init',
 		value: function _init() {
-			this.mesh = _alfrid2.default.Geom.sphere(11, 30, false, true);
+			this.mesh = _alfrid2.default.Geom.sphere(20, 36, false, true);
 
 			this.shader.bind();
-			var grey = .938;
+			var grey = .9;
 			this.shader.uniform("color", "uniform3fv", [grey, grey, grey]);
 			this.shader.uniform("opacity", "uniform1f", 1);
+			this.shader.uniform("fogColor", "uniform3fv", params.fogColor);
 		}
 	}, {
-		key: "render",
+		key: 'render',
 		value: function render() {
 			this.shader.bind();
+			this.shader.uniform("fogDistanceOffset", "uniform1f", params.fogDistanceOffset);
 			GL.draw(this.mesh);
 		}
 	}]);
@@ -6124,7 +6126,7 @@ var ViewFloor = function (_alfrid$View) {
 		_classCallCheck(this, ViewFloor);
 
 		// super(null, alfrid.ShaderLibs.simpleColorFrag);
-		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewFloor).call(this, "#define GLSLIFY 1\n// floorShadow.vert\n\n#define SHADER_NAME BASIC_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat4 uShadowMatrix;\nuniform mat3 uNormalMatrix;\n\nvarying vec2 vTextureCoord;\nvarying vec4 vShadowCoord;\nvarying vec4 vPosition;\n\nconst mat4 biasMatrix = mat4( 0.5, 0.0, 0.0, 0.0,\n\t\t\t\t\t\t\t  0.0, 0.5, 0.0, 0.0,\n\t\t\t\t\t\t\t  0.0, 0.0, 0.5, 0.0,\n\t\t\t\t\t\t\t  0.5, 0.5, 0.5, 1.0 );\n\nvoid main(void) {\n\tvec4 mvPosition = uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);\n\tgl_Position     = uProjectionMatrix * mvPosition;\n\tvPosition       = mvPosition;\n\tvTextureCoord   = aTextureCoord;\n\tvShadowCoord    = ( biasMatrix * uShadowMatrix * uModelMatrix ) * vec4(aVertexPosition, 1.0);\n\t\n\tvTextureCoord   = aTextureCoord;\n}", "#define GLSLIFY 1\n// shadow.frag\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nvarying vec4 vPosition;\nvarying vec4 vShadowCoord;\n\nuniform vec3 color;\nuniform sampler2D textureDepth;\n\nfloat pcfSoftShadow(sampler2D shadowMap) {\n\tconst float shadowMapSize  = 1024.0;\n\tconst float shadowBias     = .00005;\n\tconst float shadowDarkness = .2;\n\tfloat shadow = 0.0;\n\tfloat texelSizeX =  1.0 / shadowMapSize;\n\tfloat texelSizeY =  1.0 / shadowMapSize;\n\tvec4 shadowCoord\t= vShadowCoord / vShadowCoord.w;\n\n\tbvec4 inFrustumVec = bvec4 ( shadowCoord.x >= 0.0, shadowCoord.x <= 1.0, shadowCoord.y >= 0.0, shadowCoord.y <= 1.0 );\n\tbool inFrustum = all( inFrustumVec );\n\n\tbvec2 frustumTestVec = bvec2( inFrustum, shadowCoord.z <= 1.0 );\n\n\tbool frustumTest = all( frustumTestVec );\n\t\n\n\tif ( frustumTest ) {\n\t\tshadowCoord.z += shadowBias;\n\t\tfloat xPixelOffset = texelSizeX;\n\t\tfloat yPixelOffset = texelSizeY;\n\n\t\tfloat dx0 = - 1.0 * xPixelOffset;\n\t\tfloat dy0 = - 1.0 * yPixelOffset;\n\t\tfloat dx1 = 1.0 * xPixelOffset;\n\t\tfloat dy1 = 1.0 * yPixelOffset;\n\n\t\tmat3 shadowKernel;\n\t\tmat3 depthKernel;\n\n\t\tdepthKernel[ 0 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, dy0 ) ).r ;\n\t\tdepthKernel[ 0 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, 0.0 ) ).r ;\n\t\tdepthKernel[ 0 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, dy1 ) ).r ;\n\t\tdepthKernel[ 1 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( 0.0, dy0 ) ).r ;\n\t\tdepthKernel[ 1 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy ).r ;\n\t\tdepthKernel[ 1 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( 0.0, dy1 ) ).r ;\n\t\tdepthKernel[ 2 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, dy0 ) ).r ;\n\t\tdepthKernel[ 2 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, 0.0 ) ).r ;\n\t\tdepthKernel[ 2 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, dy1 ) ).r ;\n\n\t\tvec3 shadowZ = vec3( shadowCoord.z );\n\t\tshadowKernel[ 0 ] = vec3( lessThan( depthKernel[ 0 ], shadowZ ) );\n\t\tshadowKernel[ 0 ] *= vec3( 0.25 );\n\n\t\tshadowKernel[ 1 ] = vec3( lessThan( depthKernel[ 1 ], shadowZ ) );\n\t\tshadowKernel[ 1 ] *= vec3( 0.25 );\n\n\t\tshadowKernel[ 2 ] = vec3( lessThan( depthKernel[ 2 ], shadowZ ) );\n\t\tshadowKernel[ 2 ] *= vec3( 0.25 );\n\n\t\tvec2 fractionalCoord = 1.0 - fract( shadowCoord.xy * shadowMapSize );\n\n\t\tshadowKernel[ 0 ] = mix( shadowKernel[ 1 ], shadowKernel[ 0 ], fractionalCoord.x );\n\t\tshadowKernel[ 1 ] = mix( shadowKernel[ 2 ], shadowKernel[ 1 ], fractionalCoord.x );\n\n\t\tvec4 shadowValues;\n\t\tshadowValues.x = mix( shadowKernel[ 0 ][ 1 ], shadowKernel[ 0 ][ 0 ], fractionalCoord.y );\n\t\tshadowValues.y = mix( shadowKernel[ 0 ][ 2 ], shadowKernel[ 0 ][ 1 ], fractionalCoord.y );\n\t\tshadowValues.z = mix( shadowKernel[ 1 ][ 1 ], shadowKernel[ 1 ][ 0 ], fractionalCoord.y );\n\t\tshadowValues.w = mix( shadowKernel[ 1 ][ 2 ], shadowKernel[ 1 ][ 1 ], fractionalCoord.y );\n\n\t\tshadow = dot( shadowValues, vec4( 1.0 ) ) * shadowDarkness;\n\n\t}\n\n\treturn shadow;\n}\n\nvec4 textureProjOffset(sampler2D uShadowMap, vec4 sc, vec2 offset) {\n\tconst float shadowBias     = .00005;\n\tvec4 scCopy = sc;\n\tscCopy.xy += offset;\n\treturn texture2DProj(uShadowMap, scCopy, shadowBias);\n}\n\nvec4 pcfShadow(sampler2D uShadowMap) {\n\tvec4 sc                   = vShadowCoord / vShadowCoord.w;\n\tconst float shadowMapSize = 1024.0;\n\tconst float s             = 1.0/shadowMapSize;\n\tvec4 shadow              = vec4(0.0);\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s, s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0, s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s, s) );\n\treturn shadow/9.0;\n}\n\nvoid main(void) {\n\tvec4 pcfProject = pcfShadow(textureDepth);\n\tgl_FragColor = vec4( color, 1.0) * pcfProject;\n}"));
+		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewFloor).call(this, "#define GLSLIFY 1\n// floorShadow.vert\n\n#define SHADER_NAME BASIC_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat4 uShadowMatrix;\nuniform mat3 uNormalMatrix;\n\nvarying vec2 vTextureCoord;\nvarying vec4 vShadowCoord;\nvarying vec4 vPosition;\nvarying vec3 vNormal;\nvarying vec3 vVertex;\n\nconst mat4 biasMatrix = mat4( 0.5, 0.0, 0.0, 0.0,\n\t\t\t\t\t\t\t  0.0, 0.5, 0.0, 0.0,\n\t\t\t\t\t\t\t  0.0, 0.0, 0.5, 0.0,\n\t\t\t\t\t\t\t  0.5, 0.5, 0.5, 1.0 );\n\nvoid main(void) {\n\tvec4 mvPosition = uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);\n\tgl_Position     = uProjectionMatrix * mvPosition;\n\tvPosition       = mvPosition;\n\tvTextureCoord   = aTextureCoord;\n\tvShadowCoord    = ( biasMatrix * uShadowMatrix * uModelMatrix ) * vec4(aVertexPosition, 1.0);\n\t\n\tvTextureCoord   = aTextureCoord;\n\tvNormal         = aNormal;\n\tvVertex         = aVertexPosition;\n}", "#define GLSLIFY 1\n// shadow.frag\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nvarying vec4 vPosition;\nvarying vec3 vNormal;\nvarying vec4 vShadowCoord;\nvarying vec3 vVertex;\n\nuniform vec3 color;\nuniform vec3 lightPosition;\nuniform vec3 fogColor;\nuniform sampler2D textureDepth;\nuniform float fogDistanceOffset;\n\n#define FOG_DENSITY 0.05\n\nfloat diffuse(vec3 N, vec3 L) {\n\treturn max(dot(N, normalize(L)), 0.0);\n}\n\nvec3 diffuse(vec3 N, vec3 L, vec3 C) {\n\treturn diffuse(N, L) * C;\n}\n\nvec4 textureProjOffset(sampler2D uShadowMap, vec4 sc, vec2 offset) {\n\tconst float shadowBias     = .00005;\n\tvec4 scCopy = sc;\n\tscCopy.xy += offset;\n\treturn texture2DProj(uShadowMap, scCopy, shadowBias);\n}\n\nvec4 pcfShadow(sampler2D uShadowMap) {\n\tvec4 sc                   = vShadowCoord / vShadowCoord.w;\n\tconst float shadowMapSize = 1024.0;\n\tconst float s             = 1.0/shadowMapSize;\n\tvec4 shadow              = vec4(0.0);\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s, s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0, s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s, s) );\n\treturn shadow/9.0;\n}\n\nfloat fogFactorExp2(const float dist, const float density) {\n\tconst float LOG2 = -1.442695;\n\tfloat d = density * dist;\n\treturn 1.0 - clamp(exp2(d * d * LOG2), 0.0, 1.0);\n}\n\nvoid main(void) {\n\tvec4 pcfProject = pcfShadow(textureDepth);\n\tfloat _diffuse = diffuse(vNormal, lightPosition-vVertex);\n\tvec3 finalColor = color * mix(_diffuse, 1.0, .5);\n\n\tfloat fogDistance = gl_FragCoord.z / gl_FragCoord.w;\n\tfloat fogAmount = fogFactorExp2(fogDistance*fogDistanceOffset, FOG_DENSITY);\n\tvec4 color = vec4( finalColor, 1.0) * pcfProject;\n\n\tgl_FragColor = mix(color, vec4(fogColor/255.0, 1.0), fogAmount);\n\t// gl_FragColor = vec4( finalColor, 1.0) * pcfProject;\n}"));
 	}
 
 	_createClass(ViewFloor, [{
@@ -6135,6 +6137,7 @@ var ViewFloor = function (_alfrid$View) {
 			var positions = [];
 			var coords = [];
 			var indices = [];
+			var normals = [];
 			var count = 0;
 			var numSeg = 50;
 			var size = 40;
@@ -6158,6 +6161,23 @@ var ViewFloor = function (_alfrid$View) {
 				return [x, y + n * 2.20, z];
 			}
 
+			function getNormal(i, j) {
+				var p0 = vec3.clone(getPos(i, j));
+				var p1 = vec3.clone(getPos(i + 1, j));
+				var p2 = vec3.clone(getPos(i, j + 1));
+
+				var v0 = vec3.create();
+				var v1 = vec3.create();
+				vec3.sub(v0, p1, p0);
+				vec3.sub(v1, p2, p0);
+
+				var n = vec3.create();
+				vec3.cross(n, v1, v0);
+				vec3.normalize(n, n);
+
+				return n;
+			}
+
 			var y = -3;
 
 			for (var j = 0; j < numSeg; j++) {
@@ -6166,6 +6186,11 @@ var ViewFloor = function (_alfrid$View) {
 					positions.push(getPos(i + 1, j + 1, y));
 					positions.push(getPos(i + 1, j, y));
 					positions.push(getPos(i, j, y));
+
+					normals.push(getNormal(i, j + 1, y));
+					normals.push(getNormal(i + 1, j + 1, y));
+					normals.push(getNormal(i + 1, j, y));
+					normals.push(getNormal(i, j, y));
 
 					coords.push([i / numSeg, (j + 1) / numSeg]);
 					coords.push([(i + 1) / numSeg, (j + 1) / numSeg]);
@@ -6187,16 +6212,19 @@ var ViewFloor = function (_alfrid$View) {
 			this.mesh.bufferVertex(positions);
 			this.mesh.bufferTexCoords(coords);
 			this.mesh.bufferIndices(indices);
+			this.mesh.bufferNormal(normals);
 
 			this.shader.bind();
 			var grey = .928;
 			this.shader.uniform("color", "uniform3fv", [grey, grey, grey]);
+			this.shader.uniform("fogColor", "uniform3fv", params.fogColor);
 			this.shader.uniform("opacity", "uniform1f", 1);
 		}
 	}, {
 		key: 'render',
 		value: function render(shadowMatrix, lightPosition, textureDepth) {
 			this.shader.bind();
+			this.shader.uniform("fogDistanceOffset", "uniform1f", params.fogDistanceOffset);
 			this.shader.uniform("lightPosition", "uniform3fv", lightPosition);
 			this.shader.uniform("uShadowMatrix", "uniformMatrix4fv", shadowMatrix);
 			this.shader.uniform("textureDepth", "uniform1i", 0);
@@ -6233,6 +6261,9 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var GL = _alfrid2.default.GL;
 
+var random = function random(min, max) {
+	return min + Math.random() * (max - min);
+};
 
 var ViewPlanes = function (_alfrid$View) {
 	_inherits(ViewPlanes, _alfrid$View);
@@ -6240,11 +6271,11 @@ var ViewPlanes = function (_alfrid$View) {
 	function ViewPlanes() {
 		_classCallCheck(this, ViewPlanes);
 
-		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ViewPlanes).call(this, "#define GLSLIFY 1\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec2 aPointCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\n\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\n\nuniform float percent;\nuniform float uvIndex;\nuniform vec2 uvOffset;\nuniform float numSlices;\n\nvarying vec4 vColor;\nvarying vec2 vPointCoord;\n\nvoid main(void) {\n\tfloat offset = 1.0;\n\tvec2 uv      = aTextureCoord / numSlices;\n\tuv           += uvOffset;\n\tvec3 posCurr = texture2D(texture, uv).rgb;\n\tvec3 posNext = texture2D(textureNext, uv).rgb;\n\n\tfloat l = length(posCurr);\n\tif(length(posNext) < l && l > 10.0) {\n\t\toffset = 0.0;\n\t}\n\tvec3 pos        = mix(posCurr, posNext, percent);\n\tvec3 extra      = texture2D(textureExtra, uv).rgb;\n\t\n\tvec4 mvPosition = uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\tmvPosition.xyz  += aVertexPosition;\n\t\n\tgl_Position     = uProjectionMatrix * mvPosition;\n\t\n\tvColor          = vec4(1.0, 0.7, 0.7, 1.0) * offset;\n\tvPointCoord     = aPointCoord;\n\t// vColor          = vec4(vec3(extra.b), 1.0);\n}", "#define GLSLIFY 1\n// render.frag\n\nprecision highp float;\n\nvarying vec4 vColor;\nvarying vec2 vPointCoord;\n\nvoid main(void) {\n\tif(vColor.a <= 0.01) {\n\t\tdiscard;\n\t}\n\tif(distance(vPointCoord, vec2(.5)) > .5) {\n\t\tdiscard;\n\t}\n    gl_FragColor = vColor;\n}"));
+		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ViewPlanes).call(this, "#define GLSLIFY 1\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec2 aPointCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\n\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\n\nuniform float percent;\nuniform float uvIndex;\nuniform vec2 uvOffset;\nuniform float numSlices;\nuniform float blossom;\n\nvarying vec4 vColor;\nvarying vec2 vPointCoord;\n\nvoid main(void) {\n\tfloat offset = 1.0;\n\tvec2 uv      = aTextureCoord / numSlices;\n\tuv           += uvOffset;\n\tvec3 posCurr = texture2D(texture, uv).rgb;\n\tvec3 posNext = texture2D(textureNext, uv).rgb;\n\n\tfloat l = length(posCurr);\n\tif(length(posNext) < l && l > 8.0) {\n\t\toffset = 0.0;\n\t}\n\tvec3 pos        = mix(posCurr, posNext, percent);\n\tvec3 extra      = texture2D(textureExtra, uv).rgb;\n\t\n\tvec4 mvPosition = uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\tfloat blossomOffset = blossom * 2.0 - extra.y;\n\tblossomOffset = smoothstep(0.0, 1.0, blossomOffset);\n\n\tmvPosition.xyz  += aVertexPosition * blossomOffset;\n\t\n\tgl_Position     = uProjectionMatrix * mvPosition;\n\t\n\tvColor          = vec4(1.0, 0.7, 0.7, 1.0) * offset;\n\tvPointCoord     = aPointCoord;\n\t// vColor          = vec4(vec3(extra.b), 1.0);\n}", "#define GLSLIFY 1\n// render.frag\n\nprecision highp float;\n\nvarying vec4 vColor;\nvarying vec2 vPointCoord;\n\nvoid main(void) {\n\tif(vColor.a <= 0.01) {\n\t\tdiscard;\n\t}\n\tif(distance(vPointCoord, vec2(.5)) > .5) {\n\t\tdiscard;\n\t}\n    gl_FragColor = vColor;\n}"));
 
 		_this.shader.id = 'planes';
 		// this.shaderShadow = new alfrid.GLShader( glslify('../shaders/particlesShadow.vert'), glslify('../shaders/particlesShadow.frag') );
-		_this.shaderShadow = new _alfrid2.default.GLShader("#define GLSLIFY 1\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec2 aPointCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat4 uShadowMatrix;\nuniform mat3 uNormalMatrix;\n\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\n\nuniform float percent;\nuniform float uvIndex;\nuniform vec2 uvOffset;\nuniform float numSlices;\n\nvarying vec4 vColor;\nvarying vec2 vTextureCoord;\nvarying vec2 vPointCoord;\nvarying vec4 vShadowCoord;\nvarying vec4 vPosition;\n\nconst mat4 biasMatrix = mat4( 0.5, 0.0, 0.0, 0.0,\n\t\t\t\t\t\t\t  0.0, 0.5, 0.0, 0.0,\n\t\t\t\t\t\t\t  0.0, 0.0, 0.5, 0.0,\n\t\t\t\t\t\t\t  0.5, 0.5, 0.5, 1.0 );\n\nvoid main(void) {\n\tfloat offset = 1.0;\n\tvec2 uv      = aTextureCoord / numSlices;\n\tuv           += uvOffset;\n\tvec3 posCurr = texture2D(texture, uv).rgb;\n\tvec3 posNext = texture2D(textureNext, uv).rgb;\n\n\tfloat l = length(posCurr);\n\tif(length(posNext) < l && l > 10.0) {\n\t\toffset = 0.0;\n\t}\n\tvec3 pos        = mix(posCurr, posNext, percent);\n\tvec3 extra      = texture2D(textureExtra, uv).rgb;\n\t\n\tvec4 mvPosition = uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\tmvPosition.xyz  += aVertexPosition;\n\t\n\tgl_Position     = uProjectionMatrix * mvPosition;\n\tvPosition       = mvPosition;\n\tvTextureCoord   = aTextureCoord;\n\tvShadowCoord    = ( biasMatrix * uShadowMatrix * uModelMatrix ) * vec4(pos, 1.0);\n\t\n\tvColor          = vec4(1.0, 0.7, 0.7, 1.0) * offset;\n\tvPointCoord     = aPointCoord;\n\t// vColor          = vec4(vec3(extra.b), 1.0);\n}", "#define GLSLIFY 1\n// shadow.frag\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nvarying vec4 vPosition;\nvarying vec4 vShadowCoord;\nvarying vec2 vPointCoord;\nvarying vec4 vColor;\n\nuniform vec3 color;\nuniform sampler2D textureDepth;\n\nfloat pcfSoftShadow(sampler2D shadowMap) {\n\tconst float shadowMapSize  = 1024.0;\n\tconst float shadowBias     = .00005;\n\tconst float shadowDarkness = .22;\n\tfloat shadow = 0.0;\n\tfloat texelSizeX =  1.0 / shadowMapSize;\n\tfloat texelSizeY =  1.0 / shadowMapSize;\n\tvec4 shadowCoord\t= vShadowCoord / vShadowCoord.w;\n\n\tbvec4 inFrustumVec = bvec4 ( shadowCoord.x >= 0.0, shadowCoord.x <= 1.0, shadowCoord.y >= 0.0, shadowCoord.y <= 1.0 );\n\tbool inFrustum = all( inFrustumVec );\n\n\tbvec2 frustumTestVec = bvec2( inFrustum, shadowCoord.z <= 1.0 );\n\n\tbool frustumTest = all( frustumTestVec );\n\t\n\n\tif ( frustumTest ) {\n\t\tshadowCoord.z += shadowBias;\n\t\tfloat xPixelOffset = texelSizeX;\n\t\tfloat yPixelOffset = texelSizeY;\n\n\t\tfloat dx0 = - 1.0 * xPixelOffset;\n\t\tfloat dy0 = - 1.0 * yPixelOffset;\n\t\tfloat dx1 = 1.0 * xPixelOffset;\n\t\tfloat dy1 = 1.0 * yPixelOffset;\n\n\t\tmat3 shadowKernel;\n\t\tmat3 depthKernel;\n\n\t\tdepthKernel[ 0 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, dy0 ) ).r ;\n\t\tdepthKernel[ 0 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, 0.0 ) ).r ;\n\t\tdepthKernel[ 0 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, dy1 ) ).r ;\n\t\tdepthKernel[ 1 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( 0.0, dy0 ) ).r ;\n\t\tdepthKernel[ 1 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy ).r ;\n\t\tdepthKernel[ 1 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( 0.0, dy1 ) ).r ;\n\t\tdepthKernel[ 2 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, dy0 ) ).r ;\n\t\tdepthKernel[ 2 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, 0.0 ) ).r ;\n\t\tdepthKernel[ 2 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, dy1 ) ).r ;\n\n\t\tvec3 shadowZ = vec3( shadowCoord.z );\n\t\tshadowKernel[ 0 ] = vec3( lessThan( depthKernel[ 0 ], shadowZ ) );\n\t\tshadowKernel[ 0 ] *= vec3( 0.25 );\n\n\t\tshadowKernel[ 1 ] = vec3( lessThan( depthKernel[ 1 ], shadowZ ) );\n\t\tshadowKernel[ 1 ] *= vec3( 0.25 );\n\n\t\tshadowKernel[ 2 ] = vec3( lessThan( depthKernel[ 2 ], shadowZ ) );\n\t\tshadowKernel[ 2 ] *= vec3( 0.25 );\n\n\t\tvec2 fractionalCoord = 1.0 - fract( shadowCoord.xy * shadowMapSize );\n\n\t\tshadowKernel[ 0 ] = mix( shadowKernel[ 1 ], shadowKernel[ 0 ], fractionalCoord.x );\n\t\tshadowKernel[ 1 ] = mix( shadowKernel[ 2 ], shadowKernel[ 1 ], fractionalCoord.x );\n\n\t\tvec4 shadowValues;\n\t\tshadowValues.x = mix( shadowKernel[ 0 ][ 1 ], shadowKernel[ 0 ][ 0 ], fractionalCoord.y );\n\t\tshadowValues.y = mix( shadowKernel[ 0 ][ 2 ], shadowKernel[ 0 ][ 1 ], fractionalCoord.y );\n\t\tshadowValues.z = mix( shadowKernel[ 1 ][ 1 ], shadowKernel[ 1 ][ 0 ], fractionalCoord.y );\n\t\tshadowValues.w = mix( shadowKernel[ 1 ][ 2 ], shadowKernel[ 1 ][ 1 ], fractionalCoord.y );\n\n\t\tshadow = dot( shadowValues, vec4( 1.0 ) ) * shadowDarkness;\n\n\t}\n\n\treturn shadow;\n}\n\nvec4 textureProjOffset(sampler2D uShadowMap, vec4 sc, vec2 offset) {\n\tconst float shadowBias     = .00005;\n\tvec4 scCopy = sc;\n\tscCopy.xy += offset;\n\treturn texture2DProj(uShadowMap, scCopy, shadowBias);\n}\n\nvec4 pcfShadow(sampler2D uShadowMap) {\n\tvec4 sc                   = vShadowCoord / vShadowCoord.w;\n\tconst float shadowMapSize = 1024.0;\n\tconst float s             = 1.0/shadowMapSize;\n\tvec4 shadow              = vec4(0.0);\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s, s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0, s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s, s) );\n\treturn shadow/9.0;\n}\n\nvoid main(void) {\n\tif(vColor.a <= 0.01) {\n\t\tdiscard;\n\t}\n\tif(distance(vPointCoord, vec2(.5)) > .5) {\n\t\tdiscard;\n\t}\n\t\n\tfloat pcf = pcfSoftShadow(textureDepth);\n\t// vec4 pcfProject = pcfShadow(textureDepth);\n\tpcf = 1.0 - smoothstep(0.0, .5, pcf);\n\tgl_FragColor = vec4( color*pcf, 1.0);\n\t// gl_FragColor = vec4( color, 1.0);\n\t// gl_FragColor = vec4( vec3(pcf), 1.0);\n\t// gl_FragColor = pcfProject;\n\n}");
+		_this.shaderShadow = new _alfrid2.default.GLShader("#define GLSLIFY 1\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec2 aPointCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat4 uShadowMatrix;\nuniform mat3 uNormalMatrix;\n\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\n\nuniform float percent;\nuniform float uvIndex;\nuniform vec2 uvOffset;\nuniform float numSlices;\nuniform float blossom;\n\nvarying vec4 vColor;\nvarying vec2 vTextureCoord;\nvarying vec2 vPointCoord;\nvarying vec4 vShadowCoord;\nvarying vec4 vPosition;\n\nconst mat4 biasMatrix = mat4( 0.5, 0.0, 0.0, 0.0,\n\t\t\t\t\t\t\t  0.0, 0.5, 0.0, 0.0,\n\t\t\t\t\t\t\t  0.0, 0.0, 0.5, 0.0,\n\t\t\t\t\t\t\t  0.5, 0.5, 0.5, 1.0 );\n\nvoid main(void) {\n\tfloat offset = 1.0;\n\tvec2 uv      = aTextureCoord / numSlices;\n\tuv           += uvOffset;\n\tvec3 posCurr = texture2D(texture, uv).rgb;\n\tvec3 posNext = texture2D(textureNext, uv).rgb;\n\n\tfloat l = length(posCurr);\n\tif(length(posNext) < l && l > 8.0) {\n\t\toffset = 0.0;\n\t}\n\tvec3 pos        = mix(posCurr, posNext, percent);\n\tvec3 extra      = texture2D(textureExtra, uv).rgb;\n\t\n\tvec4 mvPosition = uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\tfloat blossomOffset = blossom * 2.0 - extra.y;\n\tblossomOffset = smoothstep(0.0, 1.0, blossomOffset);\n\tmvPosition.xyz  += aVertexPosition * blossomOffset;\n\t\n\tgl_Position     = uProjectionMatrix * mvPosition;\n\tvPosition       = mvPosition;\n\tvTextureCoord   = aTextureCoord;\n\tvShadowCoord    = ( biasMatrix * uShadowMatrix * uModelMatrix ) * vec4(pos, 1.0);\n\t\n\n\tl = length(pos);\n\tfloat opacity \t= 1.0 - smoothstep(7.0, 10.0, l);\n\tvColor          = vec4(opacity) * offset;\n\tvPointCoord     = aPointCoord;\n\t// vColor          = vec4(vec3(extra.b), 1.0);\n}", "#define GLSLIFY 1\n// shadow.frag\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nvarying vec4 vPosition;\nvarying vec4 vShadowCoord;\nvarying vec2 vPointCoord;\nvarying vec4 vColor;\n\nuniform vec3 color;\nuniform sampler2D textureDepth;\n\nfloat pcfSoftShadow(sampler2D shadowMap) {\n\tconst float shadowMapSize  = 1024.0;\n\tconst float shadowBias     = .00005;\n\tconst float shadowDarkness = .22;\n\tfloat shadow = 0.0;\n\tfloat texelSizeX =  1.0 / shadowMapSize;\n\tfloat texelSizeY =  1.0 / shadowMapSize;\n\tvec4 shadowCoord\t= vShadowCoord / vShadowCoord.w;\n\n\tbvec4 inFrustumVec = bvec4 ( shadowCoord.x >= 0.0, shadowCoord.x <= 1.0, shadowCoord.y >= 0.0, shadowCoord.y <= 1.0 );\n\tbool inFrustum = all( inFrustumVec );\n\n\tbvec2 frustumTestVec = bvec2( inFrustum, shadowCoord.z <= 1.0 );\n\n\tbool frustumTest = all( frustumTestVec );\n\t\n\n\tif ( frustumTest ) {\n\t\tshadowCoord.z += shadowBias;\n\t\tfloat xPixelOffset = texelSizeX;\n\t\tfloat yPixelOffset = texelSizeY;\n\n\t\tfloat dx0 = - 1.0 * xPixelOffset;\n\t\tfloat dy0 = - 1.0 * yPixelOffset;\n\t\tfloat dx1 = 1.0 * xPixelOffset;\n\t\tfloat dy1 = 1.0 * yPixelOffset;\n\n\t\tmat3 shadowKernel;\n\t\tmat3 depthKernel;\n\n\t\tdepthKernel[ 0 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, dy0 ) ).r ;\n\t\tdepthKernel[ 0 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, 0.0 ) ).r ;\n\t\tdepthKernel[ 0 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, dy1 ) ).r ;\n\t\tdepthKernel[ 1 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( 0.0, dy0 ) ).r ;\n\t\tdepthKernel[ 1 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy ).r ;\n\t\tdepthKernel[ 1 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( 0.0, dy1 ) ).r ;\n\t\tdepthKernel[ 2 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, dy0 ) ).r ;\n\t\tdepthKernel[ 2 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, 0.0 ) ).r ;\n\t\tdepthKernel[ 2 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, dy1 ) ).r ;\n\n\t\tvec3 shadowZ = vec3( shadowCoord.z );\n\t\tshadowKernel[ 0 ] = vec3( lessThan( depthKernel[ 0 ], shadowZ ) );\n\t\tshadowKernel[ 0 ] *= vec3( 0.25 );\n\n\t\tshadowKernel[ 1 ] = vec3( lessThan( depthKernel[ 1 ], shadowZ ) );\n\t\tshadowKernel[ 1 ] *= vec3( 0.25 );\n\n\t\tshadowKernel[ 2 ] = vec3( lessThan( depthKernel[ 2 ], shadowZ ) );\n\t\tshadowKernel[ 2 ] *= vec3( 0.25 );\n\n\t\tvec2 fractionalCoord = 1.0 - fract( shadowCoord.xy * shadowMapSize );\n\n\t\tshadowKernel[ 0 ] = mix( shadowKernel[ 1 ], shadowKernel[ 0 ], fractionalCoord.x );\n\t\tshadowKernel[ 1 ] = mix( shadowKernel[ 2 ], shadowKernel[ 1 ], fractionalCoord.x );\n\n\t\tvec4 shadowValues;\n\t\tshadowValues.x = mix( shadowKernel[ 0 ][ 1 ], shadowKernel[ 0 ][ 0 ], fractionalCoord.y );\n\t\tshadowValues.y = mix( shadowKernel[ 0 ][ 2 ], shadowKernel[ 0 ][ 1 ], fractionalCoord.y );\n\t\tshadowValues.z = mix( shadowKernel[ 1 ][ 1 ], shadowKernel[ 1 ][ 0 ], fractionalCoord.y );\n\t\tshadowValues.w = mix( shadowKernel[ 1 ][ 2 ], shadowKernel[ 1 ][ 1 ], fractionalCoord.y );\n\n\t\tshadow = dot( shadowValues, vec4( 1.0 ) ) * shadowDarkness;\n\n\t}\n\n\treturn shadow;\n}\n\nvec4 textureProjOffset(sampler2D uShadowMap, vec4 sc, vec2 offset) {\n\tconst float shadowBias     = .00005;\n\tvec4 scCopy = sc;\n\tscCopy.xy += offset;\n\treturn texture2DProj(uShadowMap, scCopy, shadowBias);\n}\n\nvec4 pcfShadow(sampler2D uShadowMap) {\n\tvec4 sc                   = vShadowCoord / vShadowCoord.w;\n\tconst float shadowMapSize = 1024.0;\n\tconst float s             = 1.0/shadowMapSize;\n\tvec4 shadow              = vec4(0.0);\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s, s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0, s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s, s) );\n\treturn shadow/9.0;\n}\n\nvoid main(void) {\n\tif(vColor.a <= 0.01) {\n\t\tdiscard;\n\t}\n\tif(distance(vPointCoord, vec2(.5)) > .5) {\n\t\tdiscard;\n\t}\n\t\n\tfloat pcf = pcfSoftShadow(textureDepth);\n\tpcf = 1.0 - smoothstep(0.0, .5, pcf);\n\tgl_FragColor = vec4( color*pcf, vColor.a);\n\n}");
 		// this.shaderShadow = new alfrid.GLShader( glslify('../shaders/planes.vert'), glslify('../shaders/planes.frag') );
 		_this.shaderShadow.id = 'shadowParticles';
 		return _this;
@@ -6261,10 +6292,10 @@ var ViewPlanes = function (_alfrid$View) {
 			var pointCoords = [];
 			var indices = [];
 			var count = 0;
-			var size = 0.03;
 
 			for (var j = 0; j < num; j++) {
 				for (var i = 0; i < num; i++) {
+					var size = random(0.01, 0.02);
 					positions.push([-size, size, 0]);
 					positions.push([size, size, 0]);
 					positions.push([size, -size, 0]);
@@ -6314,6 +6345,7 @@ var ViewPlanes = function (_alfrid$View) {
 			textureNext.bind(1);
 			textureExtra.bind(2);
 			shader.uniform("percent", "uniform1f", percent);
+			shader.uniform("blossom", "uniform1f", params.blossom);
 			shader.uniform("uvIndex", "uniform1f", index);
 			shader.uniform("uvOffset", "uniform2fv", [x, y]);
 
@@ -6542,7 +6574,7 @@ var ViewSimulation = function (_alfrid$View) {
 	function ViewSimulation() {
 		_classCallCheck(this, ViewSimulation);
 
-		var fs = "#define GLSLIFY 1\n// sim.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D textureVel;\nuniform sampler2D texturePos;\nuniform sampler2D textureExtra;\nuniform float time;\n\nvec3 mod289(vec3 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 mod289(vec4 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 permute(vec4 x) {\treturn mod289(((x*34.0)+1.0)*x);\t}\n\nvec4 taylorInvSqrt(vec4 r) {\treturn 1.79284291400159 - 0.85373472095314 * r;}\n\nfloat snoise(vec3 v) { \n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n  vec3 g = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g;\n  vec3 i1 = min( g.xyz, l.zxy );\n  vec3 i2 = max( g.xyz, l.zxy );\n\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n  i = mod289(i); \n  vec4 p = permute( permute( permute( \n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) \n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), \n                                dot(p2,x2), dot(p3,x3) ) );\n}\n\nvec3 snoiseVec3( vec3 x ){\n\n  float s  = snoise(vec3( x ));\n  float s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));\n  float s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));\n  vec3 c = vec3( s , s1 , s2 );\n  return c;\n\n}\n\nvec3 curlNoise( vec3 p ){\n  \n  const float e = .1;\n  vec3 dx = vec3( e   , 0.0 , 0.0 );\n  vec3 dy = vec3( 0.0 , e   , 0.0 );\n  vec3 dz = vec3( 0.0 , 0.0 , e   );\n\n  vec3 p_x0 = snoiseVec3( p - dx );\n  vec3 p_x1 = snoiseVec3( p + dx );\n  vec3 p_y0 = snoiseVec3( p - dy );\n  vec3 p_y1 = snoiseVec3( p + dy );\n  vec3 p_z0 = snoiseVec3( p - dz );\n  vec3 p_z1 = snoiseVec3( p + dz );\n\n  float x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;\n  float y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;\n  float z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;\n\n  const float divisor = 1.0 / ( 2.0 * e );\n  return normalize( vec3( x , y , z ) * divisor );\n\n}\n\nvoid main(void) {\n\n\tvec3 pos = texture2D(texturePos, vTextureCoord).rgb;\n\tvec3 vel = texture2D(textureVel, vTextureCoord).rgb;\n\tvec3 extra = texture2D(textureExtra, vTextureCoord).rgb;\n\n\tfloat posOffset = .2 * mix(extra.r, 1.0, .75);\n\n\tvec3 acc = curlNoise(pos*posOffset+time);\n\tacc += vec3(.25, .8, -.25);\n\tvel += acc * .025;\n\n  float l = length(pos);\n  l = smoothstep(0.0, 10.0, l);\n\n\tfloat decrease = mix(l, 1.0, .56) * .9;\n\tif(length(pos) > 15.0) decrease = 0.0;\n\tvel *= decrease;\n\n    // gl_FragColor.g += .001;\n  gl_FragColor = vec4(vel, 1.0);\n}";
+		var fs = "#define GLSLIFY 1\n// sim.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D textureVel;\nuniform sampler2D texturePos;\nuniform sampler2D textureExtra;\nuniform float time;\n\nvec3 mod289(vec3 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 mod289(vec4 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 permute(vec4 x) {\treturn mod289(((x*34.0)+1.0)*x);\t}\n\nvec4 taylorInvSqrt(vec4 r) {\treturn 1.79284291400159 - 0.85373472095314 * r;}\n\nfloat snoise(vec3 v) { \n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n  vec3 g = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g;\n  vec3 i1 = min( g.xyz, l.zxy );\n  vec3 i2 = max( g.xyz, l.zxy );\n\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n  i = mod289(i); \n  vec4 p = permute( permute( permute( \n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) \n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), \n                                dot(p2,x2), dot(p3,x3) ) );\n}\n\nvec3 snoiseVec3( vec3 x ){\n\n  float s  = snoise(vec3( x ));\n  float s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));\n  float s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));\n  vec3 c = vec3( s , s1 , s2 );\n  return c;\n\n}\n\nvec3 curlNoise( vec3 p ){\n  \n  const float e = .1;\n  vec3 dx = vec3( e   , 0.0 , 0.0 );\n  vec3 dy = vec3( 0.0 , e   , 0.0 );\n  vec3 dz = vec3( 0.0 , 0.0 , e   );\n\n  vec3 p_x0 = snoiseVec3( p - dx );\n  vec3 p_x1 = snoiseVec3( p + dx );\n  vec3 p_y0 = snoiseVec3( p - dy );\n  vec3 p_y1 = snoiseVec3( p + dy );\n  vec3 p_z0 = snoiseVec3( p - dz );\n  vec3 p_z1 = snoiseVec3( p + dz );\n\n  float x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;\n  float y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;\n  float z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;\n\n  const float divisor = 1.0 / ( 2.0 * e );\n  return normalize( vec3( x , y , z ) * divisor );\n\n}\n\nvoid main(void) {\n\n\tvec3 pos = texture2D(texturePos, vTextureCoord).rgb;\n\tvec3 vel = texture2D(textureVel, vTextureCoord).rgb;\n\tvec3 extra = texture2D(textureExtra, vTextureCoord).rgb;\n  float l = length(pos);\n  l = smoothstep(0.0, 10.0, l);\n\n\tfloat posOffset = .2 * mix(extra.r, 1.0, .75);\n\n\tvec3 acc = curlNoise(pos*posOffset+time);\n\tacc += vec3(.25, .8, -.25);\n\tvel += acc * .0 * mix(l, 1.0, .1);\n\n  \n\n\tfloat decrease = 0.9;\n\tif(length(pos) > 10.0) decrease = 0.0;\n\tvel *= decrease;\n\n    // gl_FragColor.g += .001;\n  gl_FragColor = vec4(vel, 1.0);\n}";
 		fs = fs.replace('{{NUM_PARTICLES}}', params.numParticles.toFixed(1));
 
 		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ViewSimulation).call(this, _alfrid2.default.ShaderLibs.bigTriangleVert, fs));
@@ -6618,7 +6650,7 @@ var ViewTree = function (_alfrid$View) {
 	function ViewTree() {
 		_classCallCheck(this, ViewTree);
 
-		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewTree).call(this, "#define GLSLIFY 1\n// tree.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat3 uNormalMatrix;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\n\nvoid main(void) {\n\tvec3 pos = aVertexPosition * 2.0;\n\tpos.y -= 2.5;\n    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n    vTextureCoord = aTextureCoord;\n    vNormal = aNormal;\n}", "#define GLSLIFY 1\n// tree.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\nuniform sampler2D texture;\nuniform mat3 uNormalMatrix;\n\nconst vec3 UP = vec3(0.0, 1.0, 0.0);\nconst float PI = 3.141592657;\n\nfloat angleBetween(vec3 a, vec3 b) {\n\treturn acos(dot(a, b));\n}\n\nfloat contrast(float mValue, float mScale, float mMidPoint) {\n\treturn clamp( (mValue - mMidPoint) * mScale + mMidPoint, 0.0, 1.0);\n}\n\nfloat contrast(float mValue, float mScale) {\n\treturn contrast(mValue,  mScale, .5);\n}\n\nvec3 contrast(vec3 mValue, float mScale, float mMidPoint) {\n\treturn vec3( contrast(mValue.r, mScale, mMidPoint), contrast(mValue.g, mScale, mMidPoint), contrast(mValue.b, mScale, mMidPoint) );\n}\n\nvec3 contrast(vec3 mValue, float mScale) {\n\treturn contrast(mValue, mScale, .5);\n}\n\nfloat diffuse(vec3 N, vec3 L) {\n\treturn max(dot(N, normalize(L)), 0.0);\n}\n\nvec3 diffuse(vec3 N, vec3 L, vec3 C) {\n\treturn diffuse(N, L) * C;\n}\n\nconst vec3 LIGHT = vec3( 1.0 );\n\nvoid main(void) {\n\tvec3 ao      = texture2D(texture, vTextureCoord).rgb;\n\tao = contrast(ao, 3.0, .75);\n\tfloat a      = angleBetween(vNormal, UP);\n\ta            = 1.0 - smoothstep(0.0, PI * .75, a);\n\n\tfloat _diffuse = diffuse(uNormalMatrix*vNormal, LIGHT) * .5;\n\tgl_FragColor = vec4(vec3(a)+ao + _diffuse, 1.0);\n}"));
+		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewTree).call(this, "#define GLSLIFY 1\n// tree.vert\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat3 uNormalMatrix;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\n\nvoid main(void) {\n\tvec3 pos = aVertexPosition * 2.0;\n\tpos.y -= 2.5;\n    gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n    vTextureCoord = aTextureCoord;\n    vNormal = aNormal;\n}", "#define GLSLIFY 1\n// tree.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\nuniform vec3 lightPosition;\nuniform sampler2D texture;\n\nconst vec3 UP = vec3(0.0, 1.0, 0.0);\nconst float PI = 3.141592657;\n\nfloat angleBetween(vec3 a, vec3 b) {\n\treturn acos(dot(a, b));\n}\n\nfloat contrast(float mValue, float mScale, float mMidPoint) {\n\treturn clamp( (mValue - mMidPoint) * mScale + mMidPoint, 0.0, 1.0);\n}\n\nfloat contrast(float mValue, float mScale) {\n\treturn contrast(mValue,  mScale, .5);\n}\n\nvec3 contrast(vec3 mValue, float mScale, float mMidPoint) {\n\treturn vec3( contrast(mValue.r, mScale, mMidPoint), contrast(mValue.g, mScale, mMidPoint), contrast(mValue.b, mScale, mMidPoint) );\n}\n\nvec3 contrast(vec3 mValue, float mScale) {\n\treturn contrast(mValue, mScale, .5);\n}\n\nfloat diffuse(vec3 N, vec3 L) {\n\treturn max(dot(N, normalize(L)), 0.0);\n}\n\nvec3 diffuse(vec3 N, vec3 L, vec3 C) {\n\treturn diffuse(N, L) * C;\n}\n\nvoid main(void) {\n\tvec3 ao      = texture2D(texture, vTextureCoord).rgb;\n\tao = contrast(ao, 3.0, .75);\n\tfloat a      = angleBetween(vNormal, UP);\n\ta            = 1.0 - smoothstep(0.0, PI * .75, a);\n\n\tfloat _diffuse = diffuse(vNormal, lightPosition) * .5;\n\tgl_FragColor = vec4(vec3(a)+ao + _diffuse, 1.0);\n}"));
 	}
 
 	_createClass(ViewTree, [{
@@ -6658,12 +6690,13 @@ var ViewTree = function (_alfrid$View) {
 		}
 	}, {
 		key: 'render',
-		value: function render(texture) {
+		value: function render(texture, lightPosition) {
 			if (!this.mesh) {
 				return;
 			}
 			this.shader.bind();
 			this.shader.uniform("texture", "uniform1i", 0);
+			this.shader.uniform("lightPosition", "uniform3fv", lightPosition);
 			texture.bind(0);
 			GL.draw(this.mesh);
 		}
@@ -6708,8 +6741,10 @@ var _datGui2 = _interopRequireDefault(_datGui);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+var fog = 220;
+
 window.params = {
-	numParticles: 128 * 2,
+	numParticles: 128 * 3,
 	skipCount: 10,
 	range: 1.2,
 	speed: 1.5,
@@ -6717,7 +6752,10 @@ window.params = {
 	minThreshold: .50,
 	maxThreshold: .80,
 	isInvert: false,
-	numSlices: 2
+	numSlices: 3,
+	fogColor: [fog, fog, fog],
+	fogDistanceOffset: 1.5,
+	blossom: 0
 };
 
 var assets = [{ id: 'aomap', url: 'assets/aomap.jpg' }, { id: 'treeobj', url: 'assets/tree.obj', type: 'binary' }];
@@ -6759,8 +6797,11 @@ function _onImageLoaded(o) {
 	//	INIT SCENE
 	var scene = new _SceneApp2.default();
 
+	var gui = new _datGui2.default.GUI({ width: 300 });
+	gui.add(params, 'fogDistanceOffset', 0, 2);
+	gui.add(params, 'blossom', 0, 1);
 	/*/
- let gui = new dat.GUI({width:300});
+ 
  gui.add(params, 'focus', 0, 1);
  gui.add(params, 'range', 0, 2);
  gui.add(params, 'speed', 0, 100.5);
