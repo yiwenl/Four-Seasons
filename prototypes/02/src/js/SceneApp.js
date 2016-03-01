@@ -170,7 +170,7 @@ class SceneApp extends alfrid.Scene {
 		GL.setMatrices(this.camera);
 		
 		this._vDome.render(this._lightPosition, this._textureGlacier, this._textureGradient);
-		this._vFloor.render(this.shadowMatrix, this._lightPosition, this._fboShadowMap.getDepthTexture());
+		this._vFloor.render(this.shadowMatrix, this._lightPosition, this._fboShadowMap.getDepthTexture(), this._textureGlacier, this._textureGradient);
 		this._vTree.render(this._textureAO, this._lightPosition);
 		// this._vBall.render(this._lightPosition, 1, [1, .75, 0.5], 1);
 		

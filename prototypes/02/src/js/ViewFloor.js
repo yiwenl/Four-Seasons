@@ -104,13 +104,18 @@ class ViewFloor extends alfrid.View {
 	}
 
 
-	render(shadowMatrix, lightPosition, textureDepth) {
+	render(shadowMatrix, lightPosition, textureDepth, textureGlacier, textureGradient) {
 		this.shader.bind();
 		this.shader.uniform("fogDistanceOffset", "uniform1f", params.fogDistanceOffset);
 		this.shader.uniform("lightPosition", "uniform3fv", lightPosition);
 		this.shader.uniform("uShadowMatrix", "uniformMatrix4fv", shadowMatrix);
-		this.shader.uniform("textureDepth", "uniform1i", 0);
-		textureDepth.bind(0);	
+		this.shader.uniform("textureDepth", "uniform1i", 2);
+		textureDepth.bind(2);	
+		this.shader.uniform("textureGlacier", "uniform1i", 0);
+		textureGlacier.bind(0);
+		this.shader.uniform("textureGradient", "uniform1i", 1);
+		textureGradient.bind(1);
+		this.shader.uniform("blossom", "uniform1f", params.blossom);
 		GL.draw(this.mesh);
 	}
 

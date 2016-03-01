@@ -12,8 +12,13 @@ uniform vec3 lightPosition;
 uniform vec3 fogColor;
 uniform sampler2D textureDepth;
 uniform float fogDistanceOffset;
+uniform float blossom;
+uniform sampler2D textureGlacier;
+uniform sampler2D textureGradient;
 
 #define FOG_DENSITY 0.05
+const float PI = 3.141592657;
+const float TwoPI = 3.141592657 * 2.0;
 
 float diffuse(vec3 N, vec3 L) {
 	return max(dot(N, normalize(L)), 0.0);
@@ -56,13 +61,29 @@ float fogFactorExp2(const float dist, const float density) {
 }
 
 
+vec2 envMapEquirect(vec3 wcNormal, float flipEnvMap) {
+  float phi = acos(-wcNormal.y);
+  float theta = atan(flipEnvMap * wcNormal.x, wcNormal.z) + PI;
+  return vec2(theta / TwoPI, phi / PI);
+}
+
+vec2 envMapEquirect(vec3 wcNormal) {
+    return envMapEquirect(wcNormal, -1.0);
+}
+
+
 void main(void) {
 	vec4 pcfProject = pcfShadow(textureDepth);
 	// pcfProject.rgb = smoothstep(vec3(.5), vec3(1.0), pcfProject.rgb);
 	// pcfProject.rgb = contrast(pcfProject.rgb, 2.0, .5);
 
+	vec2 envMapUV = envMapEquirect(vNormal);
+	vec3 envColor0 = texture2D(textureGlacier, envMapUV).rgb;
+	vec3 envColor1 = texture2D(textureGradient, envMapUV).rgb;
+	vec3 envColor = mix(envColor0, envColor1, blossom);
+
 	float _diffuse = diffuse(vNormal, lightPosition-vVertex);
-	vec3 finalColor = color * mix(_diffuse, 1.0, .5);
+	vec3 finalColor = color * mix(_diffuse, 1.0, .5) + envColor * .075;
 
 
 	float fogDistance = gl_FragCoord.z / gl_FragCoord.w;
