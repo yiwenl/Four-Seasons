@@ -14,7 +14,7 @@ uniform sampler2D textureDepth;
 float pcfSoftShadow(sampler2D shadowMap) {
 	const float shadowMapSize  = 1024.0;
 	const float shadowBias     = .00005;
-	const float shadowDarkness = .2;
+	const float shadowDarkness = .22;
 	float shadow = 0.0;
 	float texelSizeX =  1.0 / shadowMapSize;
 	float texelSizeY =  1.0 / shadowMapSize;
@@ -113,7 +113,7 @@ void main(void) {
 	
 	float pcf = pcfSoftShadow(textureDepth);
 	// vec4 pcfProject = pcfShadow(textureDepth);
-	pcf = 1.0 - smoothstep(0.0, .45, pcf);
+	pcf = 1.0 - smoothstep(0.0, .5, pcf);
 	gl_FragColor = vec4( color*pcf, 1.0);
 	// gl_FragColor = vec4( color, 1.0);
 	// gl_FragColor = vec4( vec3(pcf), 1.0);

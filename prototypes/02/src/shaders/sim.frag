@@ -125,10 +125,11 @@ void main(void) {
 	acc += vec3(.25, .8, -.25);
 	vel += acc * .025;
 
+  float l = length(pos);
+  l = smoothstep(0.0, 10.0, l);
 
-	float decrease = .7;
-	if(length(pos) > 14.5) decrease = .3;
-	if(length(pos) < 2.0) decrease = .5;
+	float decrease = mix(l, 1.0, .56) * .9;
+	if(length(pos) > 15.0) decrease = 0.0;
 	vel *= decrease;
 
     // gl_FragColor.g += .001;

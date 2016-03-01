@@ -29,7 +29,8 @@ class SceneApp extends alfrid.Scene {
 		this._hasSaved = false;
 
 		// this._lightPosition = [12.5, 25, -12.5];
-		this._lightPosition = [-10.5, 30, 0.5];
+		this._lightPosition = [-5.5, 20, 5.5];
+		// this._lightPosition = [-0.5, 30, 0.5];
 		this.shadowMatrix  = mat4.create();
 		this.cameraLight   = new alfrid.CameraPerspective();
 		let fov            = Math.PI * .65;

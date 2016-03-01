@@ -19,13 +19,14 @@ class ViewPlanes extends alfrid.View {
 
 	_init() {
 
-		let num         = params.numParticles / params.numSlices;
-		let positions   = [];
-		let coords      = [];
-		let pointCoords = [];
-		let indices     = [];
-		let count       = 0;
-		let size        = 0.03;
+		let num          = params.numParticles / params.numSlices;
+		let numParticles = params.numParticles;
+		let positions    = [];
+		let coords       = [];
+		let pointCoords  = [];
+		let indices      = [];
+		let count        = 0;
+		let size         = 0.03;
 
 		for(let j=0; j<num; j++) {
 			for(let i=0; i<num; i++) {
@@ -64,12 +65,7 @@ class ViewPlanes extends alfrid.View {
 
 
 	render(texture, textureNext, textureExtra, percent, index, shadowMatrix, lightPosition, textureDepth) {
-
-		// let hasShadowMatrix = shadowMatrix === undefined;
-		// let shader = shadowMatrix ? this.shaderShadow : this.shader;
 		let shader = shadowMatrix ? this.shaderShadow : this.shader;
-		// console.log(shader.id);
-
 		let x = (index % params.numSlices) / params.numSlices
 		let y = Math.floor(index / params.numSlices) / params.numSlices;
 

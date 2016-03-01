@@ -36,7 +36,8 @@ void main(void) {
 	vec3 posCurr = texture2D(texture, uv).rgb;
 	vec3 posNext = texture2D(textureNext, uv).rgb;
 
-	if(length(posNext) < length(posCurr)) {
+	float l = length(posCurr);
+	if(length(posNext) < l && l > 10.0) {
 		offset = 0.0;
 	}
 	vec3 pos        = mix(posCurr, posNext, percent);
