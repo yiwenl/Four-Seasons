@@ -75,7 +75,7 @@ class ViewPlanes extends alfrid.View {
 		shader.uniform("texture", "uniform1i", 0);
 		shader.uniform("textureNext", "uniform1i", 1);
 		shader.uniform("textureExtra", "uniform1i", 2);
-		shader.uniform("color", "uniform3fv", [1, .8, .8]);
+		shader.uniform("color", "uniform3fv", [1, .78, .78]);
 		shader.uniform("numSlices", "uniform1f", params.numSlices);
 		texture.bind(0);
 		textureNext.bind(1);

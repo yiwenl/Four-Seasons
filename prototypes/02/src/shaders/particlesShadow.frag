@@ -116,6 +116,8 @@ void main(void) {
 	
 	float pcf = pcfSoftShadow(textureDepth);
 	pcf = 1.0 - smoothstep(0.0, .5, pcf);
-	gl_FragColor = vec4( color*pcf, vColor.a);
+	vec3 finalColor = color;
+	finalColor.gb += vColor.gg * .2;
+	gl_FragColor = vec4( finalColor*pcf, vColor.a);
 
 }

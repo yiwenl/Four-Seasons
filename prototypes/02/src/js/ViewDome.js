@@ -7,7 +7,7 @@ var glslify = require("glslify");
 class ViewDome extends alfrid.View {
 	
 	constructor() {
-		super(null, glslify('../shaders/dome.frag'));
+		super(glslify('../shaders/dome.vert'), glslify('../shaders/dome.frag'));
 	}
 
 
@@ -22,9 +22,18 @@ class ViewDome extends alfrid.View {
 	}
 
 
-	render() {
+	render(lightPosition, textureGlacier, textureGradient) {
 		this.shader.bind();
 		this.shader.uniform("fogDistanceOffset", "uniform1f", params.fogDistanceOffset);
+		this.shader.uniform("lightPosition", "uniform3fv", lightPosition);
+
+		this.shader.uniform("textureGlacier", "uniform1i", 0);
+		textureGlacier.bind(0);
+
+		this.shader.uniform("textureGradient", "uniform1i", 1);
+		textureGradient.bind(1);
+
+		this.shader.uniform("blossom", "uniform1f", params.blossom);
 		GL.draw(this.mesh);
 	}
 

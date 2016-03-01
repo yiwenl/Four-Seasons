@@ -36,7 +36,9 @@ class ViewTree extends alfrid.View {
 			v[1] = normals[i][1];
 			v[2] = normals[i][2];
 
-			if(angleTween(v, UP) < 90 && vertices[i][1] > 1) {
+			let a = angleTween(v, UP);
+			// console.log(a, vertices[i][1]);
+			if(a < 90 && vertices[i][1] > .175) {
 				this._points.push(vec3.clone(vertices[i]));	
 			}
 			

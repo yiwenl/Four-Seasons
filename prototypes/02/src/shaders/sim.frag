@@ -8,6 +8,7 @@ uniform sampler2D textureVel;
 uniform sampler2D texturePos;
 uniform sampler2D textureExtra;
 uniform float time;
+uniform float speed;
 
 
 vec3 mod289(vec3 x) {	return x - floor(x * (1.0 / 289.0)) * 289.0;	}
@@ -125,11 +126,11 @@ void main(void) {
 
 	vec3 acc = curlNoise(pos*posOffset+time);
 	acc += vec3(.25, .8, -.25);
-	vel += acc * .0 * mix(l, 1.0, .1);
+	vel += acc * .02 * speed;
 
   
 
-	float decrease = 0.9;
+	float decrease = 0.8;
 	if(length(pos) > 10.0) decrease = 0.0;
 	vel *= decrease;
 

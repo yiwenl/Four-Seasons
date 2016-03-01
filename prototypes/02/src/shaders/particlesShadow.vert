@@ -57,7 +57,7 @@ void main(void) {
 
 	l = length(pos);
 	float opacity 	= 1.0 - smoothstep(7.0, 10.0, l);
-	vColor          = vec4(opacity) * offset;
+	vColor          = vec4(extra, opacity) * offset;
 	vPointCoord     = aPointCoord;
 	// vColor          = vec4(vec3(extra.b), 1.0);
 }

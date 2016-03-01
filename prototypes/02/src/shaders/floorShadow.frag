@@ -55,8 +55,12 @@ float fogFactorExp2(const float dist, const float density) {
 	return 1.0 - clamp(exp2(d * d * LOG2), 0.0, 1.0);
 }
 
+
 void main(void) {
 	vec4 pcfProject = pcfShadow(textureDepth);
+	// pcfProject.rgb = smoothstep(vec3(.5), vec3(1.0), pcfProject.rgb);
+	// pcfProject.rgb = contrast(pcfProject.rgb, 2.0, .5);
+
 	float _diffuse = diffuse(vNormal, lightPosition-vVertex);
 	vec3 finalColor = color * mix(_diffuse, 1.0, .5);
 

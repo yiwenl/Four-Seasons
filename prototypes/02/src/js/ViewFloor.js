@@ -98,7 +98,7 @@ class ViewFloor extends alfrid.View {
 
 		this.shader.bind();
 		let grey = .928;
-		this.shader.uniform("color", "uniform3fv", [grey, grey, grey]);
+		this.shader.uniform("color", "uniform3fv", [grey, grey, grey+.01]);
 		this.shader.uniform("fogColor", "uniform3fv", params.fogColor);
 		this.shader.uniform("opacity", "uniform1f", 1);
 	}

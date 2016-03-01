@@ -40,6 +40,7 @@ class ViewSimulation extends alfrid.View {
 		textureExtra.bind(2);
 
 		this.shader.uniform("time", "uniform1f", this.time);
+		this.shader.uniform("speed", "uniform1f", params.speed);
 
 		GL.draw(this.mesh);
 	}

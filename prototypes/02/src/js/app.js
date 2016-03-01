@@ -15,13 +15,16 @@ window.params = {
 	maxThreshold:.80,
 	isInvert:false,
 	numSlices:3,
-	fogColor:[fog,fog,fog],
+	fogColor:[fog,fog,fog+5],
 	fogDistanceOffset:1.5,
-	blossom:0
+	blossom:0,
+	speed:0
 };
 
 let assets = [
 	{id:'aomap', url:'assets/aomap.jpg'},
+	{id:'glacier', url:'assets/glacier.jpg'},
+	{id:'gradient', url:'assets/gradient.jpg'},
 	{id:'treeobj', url:'assets/tree.obj', type:'binary'}
 ];
 
@@ -68,6 +71,7 @@ function _onImageLoaded(o) {
 	let gui = new dat.GUI({width:300});
 	gui.add(params, 'fogDistanceOffset', 0, 2);
 	gui.add(params, 'blossom', 0, 1);
+	gui.add(params, 'speed', 0, 1);
 	/*/
 	
 	gui.add(params, 'focus', 0, 1);

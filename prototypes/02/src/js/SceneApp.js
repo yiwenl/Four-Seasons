@@ -18,11 +18,11 @@ class SceneApp extends alfrid.Scene {
 	constructor() {
 		super();
 		GL.enableAlphaBlending();
-		// this.orbitalControl._rx.value = 0.0;
-		// this.orbitalControl._rx.limit(0, .36);
-		// this.orbitalControl.radius.setTo(10);
-		// this.orbitalControl.radius.value = 8;
-		// this.orbitalControl.radius.limit(1, 11);
+		this.orbitalControl._rx.value = 0.0;
+		this.orbitalControl._rx.limit(0, .36);
+		this.orbitalControl.radius.setTo(11);
+		this.orbitalControl.radius.value = 10;
+		this.orbitalControl.radius.limit(5, 12);
 		this.orbitalControl.center[1] = 3;
 		this.orbitalControl.positionOffset[1] = -.5;
 
@@ -55,6 +55,8 @@ class SceneApp extends alfrid.Scene {
 		}
 
 		this._textureAO = new alfrid.GLTexture(getAsset('aomap'));
+		this._textureGlacier = new alfrid.GLTexture(getAsset('glacier'));
+		this._textureGradient = new alfrid.GLTexture(getAsset('gradient'));
 
 		//	FBOS
 		const numParticles = params.numParticles;
@@ -135,7 +137,6 @@ class SceneApp extends alfrid.Scene {
 		let tmpPos          = this._fboCurrentPos;
 		this._fboCurrentPos = this._fboTargetPos;
 		this._fboTargetPos  = tmpPos;
-
 	}
 
 
@@ -168,10 +169,10 @@ class SceneApp extends alfrid.Scene {
 
 		GL.setMatrices(this.camera);
 		
-		this._vDome.render();
+		this._vDome.render(this._lightPosition, this._textureGlacier, this._textureGradient);
 		this._vFloor.render(this.shadowMatrix, this._lightPosition, this._fboShadowMap.getDepthTexture());
 		this._vTree.render(this._textureAO, this._lightPosition);
-		this._vBall.render(this._lightPosition, 1, [1, .75, 0.5], 1);
+		// this._vBall.render(this._lightPosition, 1, [1, .75, 0.5], 1);
 		
 		for (let i=0; i<num; i++) {
 			this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p, i, this.shadowMatrix, this._lightPosition, this._fboShadowMap.getDepthTexture());

@@ -32,15 +32,17 @@ class ViewSave extends alfrid.View {
 		let totalParticles = numParticles * numParticles;
 		let ux, uy;
 		let speedScale = .0005 * params.skipCount;
-		const range = .2;
+		const range = .125;
 
 		let random = function(min, max) { return min + Math.random() * (max - min);	}
 
 		function getRandomVertex(points) {
 			let index = Math.floor(Math.random() * points.length);
 			let v = points[index];
+			let scale = 8.0;
+			let yOffset = 2.0;
 
-			return [v[0]*2+random(-range, range), v[1]*2-2.5+random(-range, range), v[2]*2+random(-range, range)];
+			return [v[0]*scale+random(-range, range), v[1]*scale-yOffset+random(-range, range), v[2]*scale+random(-range, range)];
 		}
 
 		for(let j=0; j<numParticles; j++) {
