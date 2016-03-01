@@ -47,7 +47,7 @@ void main(void) {
 	float light = 1.0-smoothstep(0.0, 1.25, angle);
 	light = pow(light, 30.0);
 
-	finalColor.rgb += light * .5;
+	finalColor.rgb += light * (.5-blossom*.2);
 
 
 	finalColor = mix(finalColor, fogColor/255.0, fogAmount);
