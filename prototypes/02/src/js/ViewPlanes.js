@@ -9,12 +9,17 @@ class ViewPlanes extends alfrid.View {
 	
 	constructor() {
 		super(glslify('../shaders/planes.vert'), glslify('../shaders/planes.frag'));
+		this.shader.id = 'planes';
+		// this.shaderShadow = new alfrid.GLShader( glslify('../shaders/particlesShadow.vert'), glslify('../shaders/particlesShadow.frag') );
+		this.shaderShadow = new alfrid.GLShader( glslify('../shaders/particlesShadow.vert'), glslify('../shaders/particlesShadow.frag') );
+		// this.shaderShadow = new alfrid.GLShader( glslify('../shaders/planes.vert'), glslify('../shaders/planes.frag') );
+		this.shaderShadow.id = 'shadowParticles';
 	}
 
 
 	_init() {
 
-		let num         = params.numParticles;
+		let num         = params.numParticles / params.numSlices;
 		let positions   = [];
 		let coords      = [];
 		let pointCoords = [];
@@ -55,23 +60,43 @@ class ViewPlanes extends alfrid.View {
 		this.mesh.bufferTexCoords(coords);
 		this.mesh.bufferIndices(indices);
 		this.mesh.bufferData(pointCoords, 'aPointCoord', 2);
-
-
-		this.shader.bind();
-		this.shader.uniform("texture", "uniform1i", 0);
-		this.shader.uniform("textureNext", "uniform1i", 1);
-		this.shader.uniform("textureExtra", "uniform1i", 2);
 	}
 
 
-	render(texture, textureNext, textureExtra, percent) {
-		this.shader.bind();
+	render(texture, textureNext, textureExtra, percent, index, shadowMatrix, lightPosition, textureDepth) {
+
+		// let hasShadowMatrix = shadowMatrix === undefined;
+		// let shader = shadowMatrix ? this.shaderShadow : this.shader;
+		let shader = shadowMatrix ? this.shaderShadow : this.shader;
+		// console.log(shader.id);
+
+		let x = (index % params.numSlices) / params.numSlices
+		let y = Math.floor(index / params.numSlices) / params.numSlices;
+
+		shader.bind();
+		shader.uniform("texture", "uniform1i", 0);
+		shader.uniform("textureNext", "uniform1i", 1);
+		shader.uniform("textureExtra", "uniform1i", 2);
+		shader.uniform("color", "uniform3fv", [1, .8, .8]);
+		shader.uniform("numSlices", "uniform1f", params.numSlices);
 		texture.bind(0);
 		textureNext.bind(1);
 		textureExtra.bind(2);
-		this.shader.uniform("percent", "uniform1f", percent);
+		shader.uniform("percent", "uniform1f", percent);
+		shader.uniform("uvIndex", "uniform1f", index);
+		shader.uniform("uvOffset", "uniform2fv", [x, y]);
+
+
+		if(shadowMatrix) {
+			shader.uniform("lightPosition", "uniform3fv", lightPosition);
+			shader.uniform("uShadowMatrix", "uniformMatrix4fv", shadowMatrix);
+			shader.uniform("textureDepth", "uniform1i", 3);
+			textureDepth.bind(3);	
+		}
 		GL.draw(this.mesh);
 	}
+
+
 
 
 }

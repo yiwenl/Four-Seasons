@@ -5711,6 +5711,10 @@ var _ViewTree = require('./ViewTree');
 
 var _ViewTree2 = _interopRequireDefault(_ViewTree);
 
+var _ViewBall = require('./ViewBall');
+
+var _ViewBall2 = _interopRequireDefault(_ViewBall);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -5729,19 +5733,31 @@ var SceneApp = function (_alfrid$Scene) {
 	function SceneApp() {
 		_classCallCheck(this, SceneApp);
 
-		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SceneApp).call(this));
-
-		_this.camera.setPerspective(Math.PI * .65, GL.aspectRatio, 1, 100);
 		// this.orbitalControl._rx.value = 0.0;
 		// this.orbitalControl._rx.limit(0, .36);
 		// this.orbitalControl.radius.setTo(10);
 		// this.orbitalControl.radius.value = 8;
 		// this.orbitalControl.radius.limit(1, 11);
+
+		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SceneApp).call(this));
+
 		_this.orbitalControl.center[1] = 3;
 		_this.orbitalControl.positionOffset[1] = -.5;
 
 		_this._count = 0;
 		_this._hasSaved = false;
+
+		// this._lightPosition = [12.5, 25, -12.5];
+		_this._lightPosition = [-10.5, 30, 0.5];
+		_this.shadowMatrix = mat4.create();
+		_this.cameraLight = new _alfrid2.default.CameraPerspective();
+		var fov = Math.PI * .65;
+		var near = 1;
+		var far = 100;
+		_this.camera.setPerspective(fov, GL.aspectRatio, near, far);
+		_this.cameraLight.setPerspective(fov, GL.aspectRatio, near, far);
+		_this.cameraLight.lookAt(_this._lightPosition, vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
+		mat4.multiply(_this.shadowMatrix, _this.cameraLight.projection, _this.cameraLight.viewMatrix);
 		return _this;
 	}
 
@@ -5761,16 +5777,8 @@ var SceneApp = function (_alfrid$Scene) {
 
 			//	FBOS
 			var numParticles = params.numParticles;
-			var o = {
-				minFilter: GL.NEAREST,
-				magFilter: GL.NEAREST
-			};
-
-			function clearFbo(fbo) {
-				fbo.bind();
-				GL.clear(0, 0, 0, 0);
-				fbo.unbind();
-			}
+			var o = { minFilter: GL.NEAREST, magFilter: GL.NEAREST };
+			var oLinear = { minFilter: GL.LINEAR, magFilter: GL.LINEAR };
 
 			this._fboCurrentPos = new _alfrid2.default.FrameBuffer(numParticles, numParticles, o);
 			this._fboTargetPos = new _alfrid2.default.FrameBuffer(numParticles, numParticles, o);
@@ -5779,14 +5787,7 @@ var SceneApp = function (_alfrid$Scene) {
 			this._fboTargetVel = new _alfrid2.default.FrameBuffer(numParticles, numParticles, o);
 			this._fboExtra = new _alfrid2.default.FrameBuffer(numParticles, numParticles, o);
 			this._fboRender = new _alfrid2.default.FrameBuffer(GL.width, GL.height);
-
-			clearFbo(this._fboCurrentPos);
-			clearFbo(this._fboTargetPos);
-			clearFbo(this._fboOriginalPos);
-			clearFbo(this._fboCurrentVel);
-			clearFbo(this._fboTargetVel);
-			clearFbo(this._fboExtra);
-			clearFbo(this._fboRender);
+			this._fboShadowMap = new _alfrid2.default.FrameBuffer(1024, 1024, oLinear);
 		}
 	}, {
 		key: '_initViews',
@@ -5797,10 +5798,11 @@ var SceneApp = function (_alfrid$Scene) {
 			this._vSim = new _ViewSimulation2.default();
 			this._vAddVel = new _ViewAddVel2.default();
 			this._vFloor = new _ViewFloor2.default();
-			this._vDome = new _ViewDome2.default();
+			// this._vDome   = new ViewDome();
 			this._vPlanes = new _ViewPlanes2.default();
 			this._vPost = new _ViewPost2.default();
 			this._vTree = new _ViewTree2.default();
+			this._vBall = new _ViewBall2.default();
 		}
 	}, {
 		key: '_savePositions',
@@ -5854,7 +5856,8 @@ var SceneApp = function (_alfrid$Scene) {
 	}, {
 		key: 'render',
 		value: function render() {
-			// console.log(this._vTree.isReady);
+			var grey = .9;
+			GL.clear(grey, grey, grey, 1.0);
 			if (this._vTree.isReady && !this._hasSaved) {
 				this._savePositions();
 			}
@@ -5866,17 +5869,35 @@ var SceneApp = function (_alfrid$Scene) {
 
 			var p = this._count / params.skipCount;
 
-			this.orbitalControl._ry.value += -.01;
+			// this.orbitalControl._ry.value += -.01;
+			var num = params.numSlices * params.numSlices;
 
-			// this._fboRender.bind();
-			// GL.clear(0, 0, 0, 0);
-			this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p);
-			this._vFloor.render();
-			this._vDome.render();
+			//	SHADOW MAP
+			this._fboShadowMap.bind();
+			GL.clear(1, 1, 1, 1);
+			GL.setMatrices(this.cameraLight);
+			for (var i = 0; i < num; i++) {
+				this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p, i);
+			}
 			this._vTree.render(this._textureAO);
-			// this._fboRender.unbind();
+			this._fboShadowMap.unbind();
 
-			// this._vPost.render(this._fboRender.getDepthTexture());
+			GL.setMatrices(this.camera);
+
+			for (var i = 0; i < num; i++) {
+				this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p, i, this.shadowMatrix, this._lightPosition, this._fboShadowMap.getDepthTexture());
+				// this._vPlanes.render(this._fboTargetPos.getTexture(), this._fboCurrentPos.getTexture(), this._fboExtra.getTexture(), p, i);
+			}
+
+			this._vFloor.render(this.shadowMatrix, this._lightPosition, this._fboShadowMap.getDepthTexture());
+			this._vTree.render(this._textureAO);
+			this._vBall.render(this._lightPosition, 1, [1, .75, 0.5], 1);
+
+			GL.disable(GL.DEPTH_TEST);
+			var size = 200;
+			GL.viewport(0, 0, size, size);
+			this._bCopy.draw(this._fboShadowMap.getDepthTexture());
+			GL.enable(GL.DEPTH_TEST);
 		}
 	}, {
 		key: 'resize',
@@ -5894,7 +5915,7 @@ var SceneApp = function (_alfrid$Scene) {
 
 exports.default = SceneApp;
 
-},{"./ViewAddVel":16,"./ViewDome":17,"./ViewFloor":18,"./ViewPlanes":19,"./ViewPost":20,"./ViewSave":21,"./ViewSimulation":22,"./ViewTree":23,"./libs/alfrid.js":25,"clusterfck":7}],16:[function(require,module,exports){
+},{"./ViewAddVel":16,"./ViewBall":17,"./ViewDome":18,"./ViewFloor":19,"./ViewPlanes":20,"./ViewPost":21,"./ViewSave":22,"./ViewSimulation":23,"./ViewTree":24,"./libs/alfrid.js":26,"clusterfck":7}],16:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -5955,7 +5976,67 @@ var ViewAddVel = function (_alfrid$View) {
 
 exports.default = ViewAddVel;
 
-},{"./libs/alfrid.js":25}],17:[function(require,module,exports){
+},{"./libs/alfrid.js":26}],17:[function(require,module,exports){
+"use strict";
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+
+var _alfrid = require("./libs/alfrid.js");
+
+var _alfrid2 = _interopRequireDefault(_alfrid);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; } // ViewBall.js
+
+var GL = _alfrid2.default.GL;
+
+
+var ViewBall = function (_alfrid$View) {
+	_inherits(ViewBall, _alfrid$View);
+
+	function ViewBall() {
+		_classCallCheck(this, ViewBall);
+
+		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewBall).call(this, _alfrid2.default.ShaderLibs.generalVert, _alfrid2.default.ShaderLibs.simpleColorFrag));
+	}
+
+	_createClass(ViewBall, [{
+		key: "_init",
+		value: function _init() {
+			this.mesh = _alfrid2.default.Geom.sphere(1, 24, false);
+		}
+	}, {
+		key: "render",
+		value: function render() {
+			var pos = arguments.length <= 0 || arguments[0] === undefined ? [0, 0, 0] : arguments[0];
+			var scale = arguments.length <= 1 || arguments[1] === undefined ? 1 : arguments[1];
+			var color = arguments.length <= 2 || arguments[2] === undefined ? [1, 0, 0] : arguments[2];
+			var opacity = arguments.length <= 3 || arguments[3] === undefined ? 1 : arguments[3];
+
+			this.shader.bind();
+			this.shader.uniform("position", "uniform3fv", pos);
+			this.shader.uniform("scale", "uniform3fv", [scale, scale, scale]);
+			this.shader.uniform("color", "uniform3fv", color);
+			this.shader.uniform("opacity", "uniform1f", opacity);
+			GL.draw(this.mesh);
+		}
+	}]);
+
+	return ViewBall;
+}(_alfrid2.default.View);
+
+exports.default = ViewBall;
+
+},{"./libs/alfrid.js":26}],18:[function(require,module,exports){
 "use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -6011,8 +6092,8 @@ var ViewDome = function (_alfrid$View) {
 
 exports.default = ViewDome;
 
-},{"./libs/alfrid.js":25}],18:[function(require,module,exports){
-"use strict";
+},{"./libs/alfrid.js":26}],19:[function(require,module,exports){
+'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -6020,7 +6101,7 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
-var _alfrid = require("./libs/alfrid.js");
+var _alfrid = require('./libs/alfrid.js');
 
 var _alfrid2 = _interopRequireDefault(_alfrid);
 
@@ -6041,11 +6122,12 @@ var ViewFloor = function (_alfrid$View) {
 	function ViewFloor() {
 		_classCallCheck(this, ViewFloor);
 
-		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewFloor).call(this, null, _alfrid2.default.ShaderLibs.simpleColorFrag));
+		// super(null, alfrid.ShaderLibs.simpleColorFrag);
+		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewFloor).call(this, "#define GLSLIFY 1\n// floorShadow.vert\n\n#define SHADER_NAME BASIC_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat4 uShadowMatrix;\nuniform mat3 uNormalMatrix;\n\nvarying vec2 vTextureCoord;\nvarying vec4 vShadowCoord;\nvarying vec4 vPosition;\n\nconst mat4 biasMatrix = mat4( 0.5, 0.0, 0.0, 0.0,\n\t\t\t\t\t\t\t  0.0, 0.5, 0.0, 0.0,\n\t\t\t\t\t\t\t  0.0, 0.0, 0.5, 0.0,\n\t\t\t\t\t\t\t  0.5, 0.5, 0.5, 1.0 );\n\nvoid main(void) {\n\tvec4 mvPosition = uViewMatrix * uModelMatrix * vec4(aVertexPosition, 1.0);\n\tgl_Position     = uProjectionMatrix * mvPosition;\n\tvPosition       = mvPosition;\n\tvTextureCoord   = aTextureCoord;\n\tvShadowCoord    = ( biasMatrix * uShadowMatrix * uModelMatrix ) * vec4(aVertexPosition, 1.0);\n\t\n\tvTextureCoord   = aTextureCoord;\n}", "#define GLSLIFY 1\n// shadow.frag\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nvarying vec4 vPosition;\nvarying vec4 vShadowCoord;\n\nuniform vec3 color;\nuniform sampler2D textureDepth;\n\nfloat pcfSoftShadow(sampler2D shadowMap) {\n\tconst float shadowMapSize  = 1024.0;\n\tconst float shadowBias     = .00005;\n\tconst float shadowDarkness = .2;\n\tfloat shadow = 0.0;\n\tfloat texelSizeX =  1.0 / shadowMapSize;\n\tfloat texelSizeY =  1.0 / shadowMapSize;\n\tvec4 shadowCoord\t= vShadowCoord / vShadowCoord.w;\n\n\tbvec4 inFrustumVec = bvec4 ( shadowCoord.x >= 0.0, shadowCoord.x <= 1.0, shadowCoord.y >= 0.0, shadowCoord.y <= 1.0 );\n\tbool inFrustum = all( inFrustumVec );\n\n\tbvec2 frustumTestVec = bvec2( inFrustum, shadowCoord.z <= 1.0 );\n\n\tbool frustumTest = all( frustumTestVec );\n\t\n\n\tif ( frustumTest ) {\n\t\tshadowCoord.z += shadowBias;\n\t\tfloat xPixelOffset = texelSizeX;\n\t\tfloat yPixelOffset = texelSizeY;\n\n\t\tfloat dx0 = - 1.0 * xPixelOffset;\n\t\tfloat dy0 = - 1.0 * yPixelOffset;\n\t\tfloat dx1 = 1.0 * xPixelOffset;\n\t\tfloat dy1 = 1.0 * yPixelOffset;\n\n\t\tmat3 shadowKernel;\n\t\tmat3 depthKernel;\n\n\t\tdepthKernel[ 0 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, dy0 ) ).r ;\n\t\tdepthKernel[ 0 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, 0.0 ) ).r ;\n\t\tdepthKernel[ 0 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, dy1 ) ).r ;\n\t\tdepthKernel[ 1 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( 0.0, dy0 ) ).r ;\n\t\tdepthKernel[ 1 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy ).r ;\n\t\tdepthKernel[ 1 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( 0.0, dy1 ) ).r ;\n\t\tdepthKernel[ 2 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, dy0 ) ).r ;\n\t\tdepthKernel[ 2 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, 0.0 ) ).r ;\n\t\tdepthKernel[ 2 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, dy1 ) ).r ;\n\n\t\tvec3 shadowZ = vec3( shadowCoord.z );\n\t\tshadowKernel[ 0 ] = vec3( lessThan( depthKernel[ 0 ], shadowZ ) );\n\t\tshadowKernel[ 0 ] *= vec3( 0.25 );\n\n\t\tshadowKernel[ 1 ] = vec3( lessThan( depthKernel[ 1 ], shadowZ ) );\n\t\tshadowKernel[ 1 ] *= vec3( 0.25 );\n\n\t\tshadowKernel[ 2 ] = vec3( lessThan( depthKernel[ 2 ], shadowZ ) );\n\t\tshadowKernel[ 2 ] *= vec3( 0.25 );\n\n\t\tvec2 fractionalCoord = 1.0 - fract( shadowCoord.xy * shadowMapSize );\n\n\t\tshadowKernel[ 0 ] = mix( shadowKernel[ 1 ], shadowKernel[ 0 ], fractionalCoord.x );\n\t\tshadowKernel[ 1 ] = mix( shadowKernel[ 2 ], shadowKernel[ 1 ], fractionalCoord.x );\n\n\t\tvec4 shadowValues;\n\t\tshadowValues.x = mix( shadowKernel[ 0 ][ 1 ], shadowKernel[ 0 ][ 0 ], fractionalCoord.y );\n\t\tshadowValues.y = mix( shadowKernel[ 0 ][ 2 ], shadowKernel[ 0 ][ 1 ], fractionalCoord.y );\n\t\tshadowValues.z = mix( shadowKernel[ 1 ][ 1 ], shadowKernel[ 1 ][ 0 ], fractionalCoord.y );\n\t\tshadowValues.w = mix( shadowKernel[ 1 ][ 2 ], shadowKernel[ 1 ][ 1 ], fractionalCoord.y );\n\n\t\tshadow = dot( shadowValues, vec4( 1.0 ) ) * shadowDarkness;\n\n\t}\n\n\treturn shadow;\n}\n\nvec4 textureProjOffset(sampler2D uShadowMap, vec4 sc, vec2 offset) {\n\tconst float shadowBias     = .00005;\n\tvec4 scCopy = sc;\n\tscCopy.xy += offset;\n\treturn texture2DProj(uShadowMap, scCopy, shadowBias);\n}\n\nvec4 pcfShadow(sampler2D uShadowMap) {\n\tvec4 sc                   = vShadowCoord / vShadowCoord.w;\n\tconst float shadowMapSize = 1024.0;\n\tconst float s             = 1.0/shadowMapSize;\n\tvec4 shadow              = vec4(0.0);\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s, s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0, s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s, s) );\n\treturn shadow/9.0;\n}\n\nvoid main(void) {\n\tvec4 pcfProject = pcfShadow(textureDepth);\n\tgl_FragColor = vec4( color, 1.0) * pcfProject;\n}"));
 	}
 
 	_createClass(ViewFloor, [{
-		key: "_init",
+		key: '_init',
 		value: function _init() {
 			var offset = .16;
 
@@ -6084,10 +6166,10 @@ var ViewFloor = function (_alfrid$View) {
 					positions.push(getPos(i + 1, j, y));
 					positions.push(getPos(i, j, y));
 
-					coords.push([0, 0]);
-					coords.push([1, 0]);
-					coords.push([1, 1]);
-					coords.push([0, 1]);
+					coords.push([i / numSeg, (j + 1) / numSeg]);
+					coords.push([(i + 1) / numSeg, (j + 1) / numSeg]);
+					coords.push([(i + 1) / numSeg, j / numSeg]);
+					coords.push([i / numSeg, j / numSeg]);
 
 					indices.push(count * 4 + 0);
 					indices.push(count * 4 + 1);
@@ -6111,9 +6193,13 @@ var ViewFloor = function (_alfrid$View) {
 			this.shader.uniform("opacity", "uniform1f", 1);
 		}
 	}, {
-		key: "render",
-		value: function render() {
+		key: 'render',
+		value: function render(shadowMatrix, lightPosition, textureDepth) {
 			this.shader.bind();
+			this.shader.uniform("lightPosition", "uniform3fv", lightPosition);
+			this.shader.uniform("uShadowMatrix", "uniformMatrix4fv", shadowMatrix);
+			this.shader.uniform("textureDepth", "uniform1i", 0);
+			textureDepth.bind(0);
 			GL.draw(this.mesh);
 		}
 	}]);
@@ -6123,7 +6209,7 @@ var ViewFloor = function (_alfrid$View) {
 
 exports.default = ViewFloor;
 
-},{"./libs/alfrid.js":25}],19:[function(require,module,exports){
+},{"./libs/alfrid.js":26}],20:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -6153,14 +6239,21 @@ var ViewPlanes = function (_alfrid$View) {
 	function ViewPlanes() {
 		_classCallCheck(this, ViewPlanes);
 
-		return _possibleConstructorReturn(this, Object.getPrototypeOf(ViewPlanes).call(this, "#define GLSLIFY 1\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec2 aPointCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\n\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\n\nuniform float percent;\n\nvarying vec4 vColor;\nvarying vec2 vPointCoord;\n\nvoid main(void) {\n\tfloat offset \t= 1.0;\n\tvec3 posCurr    = texture2D(texture, aTextureCoord).rgb;\n\tvec3 posNext    = texture2D(textureNext, aTextureCoord).rgb;\n\n\tif(length(posNext) < length(posCurr)) {\n\t\toffset = 0.0;\n\t}\n\tvec3 pos        = mix(posCurr, posNext, percent);\n\tvec3 extra      = texture2D(textureExtra, aTextureCoord).rgb;\n\t\n\tvec4 mvPosition = uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\tmvPosition.xyz  += aVertexPosition;\n\t\n\tgl_Position     = uProjectionMatrix * mvPosition;\n\t\n\tvColor          = vec4(0.85, 0.0, 0.0, 1.0) * offset;\n\tvPointCoord     = aPointCoord;\n\t// vColor          = vec4(vec3(extra.b), 1.0);\n}", "#define GLSLIFY 1\n// render.frag\n\nprecision highp float;\n\nvarying vec4 vColor;\nvarying vec2 vPointCoord;\n\nvoid main(void) {\n\tif(vColor.a <= 0.01) {\n\t\tdiscard;\n\t}\n\tif(distance(vPointCoord, vec2(.5)) > .5) {\n\t\tdiscard;\n\t}\n    gl_FragColor = vColor;\n}"));
+		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ViewPlanes).call(this, "#define GLSLIFY 1\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec2 aPointCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\n\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\n\nuniform float percent;\nuniform float uvIndex;\nuniform vec2 uvOffset;\nuniform float numSlices;\n\nvarying vec4 vColor;\nvarying vec2 vPointCoord;\n\nvoid main(void) {\n\tfloat offset = 1.0;\n\tvec2 uv      = aTextureCoord / numSlices;\n\tuv           += uvOffset;\n\tvec3 posCurr = texture2D(texture, uv).rgb;\n\tvec3 posNext = texture2D(textureNext, uv).rgb;\n\n\tif(length(posNext) < length(posCurr)) {\n\t\toffset = 0.0;\n\t}\n\tvec3 pos        = mix(posCurr, posNext, percent);\n\tvec3 extra      = texture2D(textureExtra, uv).rgb;\n\t\n\tvec4 mvPosition = uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\tmvPosition.xyz  += aVertexPosition;\n\t\n\tgl_Position     = uProjectionMatrix * mvPosition;\n\t\n\tvColor          = vec4(1.0, 0.7, 0.7, 1.0) * offset;\n\tvPointCoord     = aPointCoord;\n\t// vColor          = vec4(vec3(extra.b), 1.0);\n}", "#define GLSLIFY 1\n// render.frag\n\nprecision highp float;\n\nvarying vec4 vColor;\nvarying vec2 vPointCoord;\n\nvoid main(void) {\n\tif(vColor.a <= 0.01) {\n\t\tdiscard;\n\t}\n\tif(distance(vPointCoord, vec2(.5)) > .5) {\n\t\tdiscard;\n\t}\n    gl_FragColor = vColor;\n}"));
+
+		_this.shader.id = 'planes';
+		// this.shaderShadow = new alfrid.GLShader( glslify('../shaders/particlesShadow.vert'), glslify('../shaders/particlesShadow.frag') );
+		_this.shaderShadow = new _alfrid2.default.GLShader("#define GLSLIFY 1\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec2 aPointCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat4 uShadowMatrix;\nuniform mat3 uNormalMatrix;\n\nuniform sampler2D texture;\nuniform sampler2D textureNext;\nuniform sampler2D textureExtra;\n\nuniform float percent;\nuniform float uvIndex;\nuniform vec2 uvOffset;\nuniform float numSlices;\n\nvarying vec4 vColor;\nvarying vec2 vTextureCoord;\nvarying vec2 vPointCoord;\nvarying vec4 vShadowCoord;\nvarying vec4 vPosition;\n\nconst mat4 biasMatrix = mat4( 0.5, 0.0, 0.0, 0.0,\n\t\t\t\t\t\t\t  0.0, 0.5, 0.0, 0.0,\n\t\t\t\t\t\t\t  0.0, 0.0, 0.5, 0.0,\n\t\t\t\t\t\t\t  0.5, 0.5, 0.5, 1.0 );\n\nvoid main(void) {\n\tfloat offset = 1.0;\n\tvec2 uv      = aTextureCoord / numSlices;\n\tuv           += uvOffset;\n\tvec3 posCurr = texture2D(texture, uv).rgb;\n\tvec3 posNext = texture2D(textureNext, uv).rgb;\n\n\tif(length(posNext) < length(posCurr)) {\n\t\toffset = 0.0;\n\t}\n\tvec3 pos        = mix(posCurr, posNext, percent);\n\tvec3 extra      = texture2D(textureExtra, uv).rgb;\n\t\n\tvec4 mvPosition = uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\tmvPosition.xyz  += aVertexPosition;\n\t\n\tgl_Position     = uProjectionMatrix * mvPosition;\n\tvPosition       = mvPosition;\n\tvTextureCoord   = aTextureCoord;\n\tvShadowCoord    = ( biasMatrix * uShadowMatrix * uModelMatrix ) * vec4(pos, 1.0);\n\t\n\tvColor          = vec4(1.0, 0.7, 0.7, 1.0) * offset;\n\tvPointCoord     = aPointCoord;\n\t// vColor          = vec4(vec3(extra.b), 1.0);\n}", "#define GLSLIFY 1\n// shadow.frag\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nvarying vec4 vPosition;\nvarying vec4 vShadowCoord;\nvarying vec2 vPointCoord;\nvarying vec4 vColor;\n\nuniform vec3 color;\nuniform sampler2D textureDepth;\n\nfloat pcfSoftShadow(sampler2D shadowMap) {\n\tconst float shadowMapSize  = 1024.0;\n\tconst float shadowBias     = .00005;\n\tconst float shadowDarkness = .2;\n\tfloat shadow = 0.0;\n\tfloat texelSizeX =  1.0 / shadowMapSize;\n\tfloat texelSizeY =  1.0 / shadowMapSize;\n\tvec4 shadowCoord\t= vShadowCoord / vShadowCoord.w;\n\n\tbvec4 inFrustumVec = bvec4 ( shadowCoord.x >= 0.0, shadowCoord.x <= 1.0, shadowCoord.y >= 0.0, shadowCoord.y <= 1.0 );\n\tbool inFrustum = all( inFrustumVec );\n\n\tbvec2 frustumTestVec = bvec2( inFrustum, shadowCoord.z <= 1.0 );\n\n\tbool frustumTest = all( frustumTestVec );\n\t\n\n\tif ( frustumTest ) {\n\t\tshadowCoord.z += shadowBias;\n\t\tfloat xPixelOffset = texelSizeX;\n\t\tfloat yPixelOffset = texelSizeY;\n\n\t\tfloat dx0 = - 1.0 * xPixelOffset;\n\t\tfloat dy0 = - 1.0 * yPixelOffset;\n\t\tfloat dx1 = 1.0 * xPixelOffset;\n\t\tfloat dy1 = 1.0 * yPixelOffset;\n\n\t\tmat3 shadowKernel;\n\t\tmat3 depthKernel;\n\n\t\tdepthKernel[ 0 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, dy0 ) ).r ;\n\t\tdepthKernel[ 0 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, 0.0 ) ).r ;\n\t\tdepthKernel[ 0 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx0, dy1 ) ).r ;\n\t\tdepthKernel[ 1 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( 0.0, dy0 ) ).r ;\n\t\tdepthKernel[ 1 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy ).r ;\n\t\tdepthKernel[ 1 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( 0.0, dy1 ) ).r ;\n\t\tdepthKernel[ 2 ][ 0 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, dy0 ) ).r ;\n\t\tdepthKernel[ 2 ][ 1 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, 0.0 ) ).r ;\n\t\tdepthKernel[ 2 ][ 2 ] = texture2D( shadowMap, shadowCoord.xy + vec2( dx1, dy1 ) ).r ;\n\n\t\tvec3 shadowZ = vec3( shadowCoord.z );\n\t\tshadowKernel[ 0 ] = vec3( lessThan( depthKernel[ 0 ], shadowZ ) );\n\t\tshadowKernel[ 0 ] *= vec3( 0.25 );\n\n\t\tshadowKernel[ 1 ] = vec3( lessThan( depthKernel[ 1 ], shadowZ ) );\n\t\tshadowKernel[ 1 ] *= vec3( 0.25 );\n\n\t\tshadowKernel[ 2 ] = vec3( lessThan( depthKernel[ 2 ], shadowZ ) );\n\t\tshadowKernel[ 2 ] *= vec3( 0.25 );\n\n\t\tvec2 fractionalCoord = 1.0 - fract( shadowCoord.xy * shadowMapSize );\n\n\t\tshadowKernel[ 0 ] = mix( shadowKernel[ 1 ], shadowKernel[ 0 ], fractionalCoord.x );\n\t\tshadowKernel[ 1 ] = mix( shadowKernel[ 2 ], shadowKernel[ 1 ], fractionalCoord.x );\n\n\t\tvec4 shadowValues;\n\t\tshadowValues.x = mix( shadowKernel[ 0 ][ 1 ], shadowKernel[ 0 ][ 0 ], fractionalCoord.y );\n\t\tshadowValues.y = mix( shadowKernel[ 0 ][ 2 ], shadowKernel[ 0 ][ 1 ], fractionalCoord.y );\n\t\tshadowValues.z = mix( shadowKernel[ 1 ][ 1 ], shadowKernel[ 1 ][ 0 ], fractionalCoord.y );\n\t\tshadowValues.w = mix( shadowKernel[ 1 ][ 2 ], shadowKernel[ 1 ][ 1 ], fractionalCoord.y );\n\n\t\tshadow = dot( shadowValues, vec4( 1.0 ) ) * shadowDarkness;\n\n\t}\n\n\treturn shadow;\n}\n\nvec4 textureProjOffset(sampler2D uShadowMap, vec4 sc, vec2 offset) {\n\tconst float shadowBias     = .00005;\n\tvec4 scCopy = sc;\n\tscCopy.xy += offset;\n\treturn texture2DProj(uShadowMap, scCopy, shadowBias);\n}\n\nvec4 pcfShadow(sampler2D uShadowMap) {\n\tvec4 sc                   = vShadowCoord / vShadowCoord.w;\n\tconst float shadowMapSize = 1024.0;\n\tconst float s             = 1.0/shadowMapSize;\n\tvec4 shadow              = vec4(0.0);\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2(-s, s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( 0, s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s,-s) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s, 0) );\n\tshadow += textureProjOffset( uShadowMap, sc, vec2( s, s) );\n\treturn shadow/9.0;\n}\n\nvoid main(void) {\n\tif(vColor.a <= 0.01) {\n\t\tdiscard;\n\t}\n\tif(distance(vPointCoord, vec2(.5)) > .5) {\n\t\tdiscard;\n\t}\n\t\n\tfloat pcf = pcfSoftShadow(textureDepth);\n\t// vec4 pcfProject = pcfShadow(textureDepth);\n\tpcf = 1.0 - smoothstep(0.0, .45, pcf);\n\tgl_FragColor = vec4( color*pcf, 1.0);\n\t// gl_FragColor = vec4( color, 1.0);\n\t// gl_FragColor = vec4( vec3(pcf), 1.0);\n\t// gl_FragColor = pcfProject;\n\n}");
+		// this.shaderShadow = new alfrid.GLShader( glslify('../shaders/planes.vert'), glslify('../shaders/planes.frag') );
+		_this.shaderShadow.id = 'shadowParticles';
+		return _this;
 	}
 
 	_createClass(ViewPlanes, [{
 		key: '_init',
 		value: function _init() {
 
-			var num = params.numParticles;
+			var num = params.numParticles / params.numSlices;
 			var positions = [];
 			var coords = [];
 			var pointCoords = [];
@@ -6201,20 +6294,38 @@ var ViewPlanes = function (_alfrid$View) {
 			this.mesh.bufferTexCoords(coords);
 			this.mesh.bufferIndices(indices);
 			this.mesh.bufferData(pointCoords, 'aPointCoord', 2);
-
-			this.shader.bind();
-			this.shader.uniform("texture", "uniform1i", 0);
-			this.shader.uniform("textureNext", "uniform1i", 1);
-			this.shader.uniform("textureExtra", "uniform1i", 2);
 		}
 	}, {
 		key: 'render',
-		value: function render(texture, textureNext, textureExtra, percent) {
-			this.shader.bind();
+		value: function render(texture, textureNext, textureExtra, percent, index, shadowMatrix, lightPosition, textureDepth) {
+
+			// let hasShadowMatrix = shadowMatrix === undefined;
+			// let shader = shadowMatrix ? this.shaderShadow : this.shader;
+			var shader = shadowMatrix ? this.shaderShadow : this.shader;
+			// console.log(shader.id);
+
+			var x = index % params.numSlices / params.numSlices;
+			var y = Math.floor(index / params.numSlices) / params.numSlices;
+
+			shader.bind();
+			shader.uniform("texture", "uniform1i", 0);
+			shader.uniform("textureNext", "uniform1i", 1);
+			shader.uniform("textureExtra", "uniform1i", 2);
+			shader.uniform("color", "uniform3fv", [1, .8, .8]);
+			shader.uniform("numSlices", "uniform1f", params.numSlices);
 			texture.bind(0);
 			textureNext.bind(1);
 			textureExtra.bind(2);
-			this.shader.uniform("percent", "uniform1f", percent);
+			shader.uniform("percent", "uniform1f", percent);
+			shader.uniform("uvIndex", "uniform1f", index);
+			shader.uniform("uvOffset", "uniform2fv", [x, y]);
+
+			if (shadowMatrix) {
+				shader.uniform("lightPosition", "uniform3fv", lightPosition);
+				shader.uniform("uShadowMatrix", "uniformMatrix4fv", shadowMatrix);
+				shader.uniform("textureDepth", "uniform1i", 3);
+				textureDepth.bind(3);
+			}
 			GL.draw(this.mesh);
 		}
 	}]);
@@ -6224,7 +6335,7 @@ var ViewPlanes = function (_alfrid$View) {
 
 exports.default = ViewPlanes;
 
-},{"./libs/alfrid.js":25}],20:[function(require,module,exports){
+},{"./libs/alfrid.js":26}],21:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -6278,7 +6389,7 @@ var ViewPost = function (_alfrid$View) {
 
 exports.default = ViewPost;
 
-},{"./libs/alfrid.js":25}],21:[function(require,module,exports){
+},{"./libs/alfrid.js":26}],22:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -6403,7 +6514,7 @@ var ViewSave = function (_alfrid$View) {
 
 exports.default = ViewSave;
 
-},{"./libs/alfrid.js":25}],22:[function(require,module,exports){
+},{"./libs/alfrid.js":26}],23:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -6434,7 +6545,7 @@ var ViewSimulation = function (_alfrid$View) {
 	function ViewSimulation() {
 		_classCallCheck(this, ViewSimulation);
 
-		var fs = "#define GLSLIFY 1\n// sim.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D textureVel;\nuniform sampler2D texturePos;\nuniform sampler2D textureExtra;\nuniform float time;\n\nvec3 mod289(vec3 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 mod289(vec4 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 permute(vec4 x) {\treturn mod289(((x*34.0)+1.0)*x);\t}\n\nvec4 taylorInvSqrt(vec4 r) {\treturn 1.79284291400159 - 0.85373472095314 * r;}\n\nfloat snoise(vec3 v) { \n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n  vec3 g = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g;\n  vec3 i1 = min( g.xyz, l.zxy );\n  vec3 i2 = max( g.xyz, l.zxy );\n\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n  i = mod289(i); \n  vec4 p = permute( permute( permute( \n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) \n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), \n                                dot(p2,x2), dot(p3,x3) ) );\n}\n\nvec3 snoiseVec3( vec3 x ){\n\n  float s  = snoise(vec3( x ));\n  float s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));\n  float s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));\n  vec3 c = vec3( s , s1 , s2 );\n  return c;\n\n}\n\nvec3 curlNoise( vec3 p ){\n  \n  const float e = .1;\n  vec3 dx = vec3( e   , 0.0 , 0.0 );\n  vec3 dy = vec3( 0.0 , e   , 0.0 );\n  vec3 dz = vec3( 0.0 , 0.0 , e   );\n\n  vec3 p_x0 = snoiseVec3( p - dx );\n  vec3 p_x1 = snoiseVec3( p + dx );\n  vec3 p_y0 = snoiseVec3( p - dy );\n  vec3 p_y1 = snoiseVec3( p + dy );\n  vec3 p_z0 = snoiseVec3( p - dz );\n  vec3 p_z1 = snoiseVec3( p + dz );\n\n  float x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;\n  float y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;\n  float z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;\n\n  const float divisor = 1.0 / ( 2.0 * e );\n  return normalize( vec3( x , y , z ) * divisor );\n\n}\n\nvoid main(void) {\n\n\tvec3 pos = texture2D(texturePos, vTextureCoord).rgb;\n\tvec3 vel = texture2D(textureVel, vTextureCoord).rgb;\n\tvec3 extra = texture2D(textureExtra, vTextureCoord).rgb;\n\n\tfloat posOffset = .35 * mix(extra.r, 1.0, .75);\n\n\tvec3 acc = curlNoise(pos*posOffset+time);\n\t// acc.y += 1.0;\n\t// acc.xz += .25;\n\tacc += vec3(.25, 1.0, -.25);\n\tvel += acc * .025;\n\n\tfloat decrease = .9;\n\tif(length(pos) > 12.0) decrease = .3;\n\tif(length(pos) < 2.0) decrease = .7;\n\tvel *= decrease;\n\n    // gl_FragColor.g += .001;\n    gl_FragColor = vec4(vel, 1.0);\n}";
+		var fs = "#define GLSLIFY 1\n// sim.frag\n\n#define SHADER_NAME SIMPLE_TEXTURE\n\nprecision highp float;\nvarying vec2 vTextureCoord;\nuniform sampler2D textureVel;\nuniform sampler2D texturePos;\nuniform sampler2D textureExtra;\nuniform float time;\n\nvec3 mod289(vec3 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 mod289(vec4 x) {\treturn x - floor(x * (1.0 / 289.0)) * 289.0;\t}\n\nvec4 permute(vec4 x) {\treturn mod289(((x*34.0)+1.0)*x);\t}\n\nvec4 taylorInvSqrt(vec4 r) {\treturn 1.79284291400159 - 0.85373472095314 * r;}\n\nfloat snoise(vec3 v) { \n  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;\n  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);\n\n  vec3 i  = floor(v + dot(v, C.yyy) );\n  vec3 x0 =   v - i + dot(i, C.xxx) ;\n\n  vec3 g = step(x0.yzx, x0.xyz);\n  vec3 l = 1.0 - g;\n  vec3 i1 = min( g.xyz, l.zxy );\n  vec3 i2 = max( g.xyz, l.zxy );\n\n  vec3 x1 = x0 - i1 + C.xxx;\n  vec3 x2 = x0 - i2 + C.yyy; // 2.0*C.x = 1/3 = C.y\n  vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y\n\n  i = mod289(i); \n  vec4 p = permute( permute( permute( \n             i.z + vec4(0.0, i1.z, i2.z, 1.0 ))\n           + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) \n           + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));\n\n  float n_ = 0.142857142857; // 1.0/7.0\n  vec3  ns = n_ * D.wyz - D.xzx;\n\n  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);  //  mod(p,7*7)\n\n  vec4 x_ = floor(j * ns.z);\n  vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)\n\n  vec4 x = x_ *ns.x + ns.yyyy;\n  vec4 y = y_ *ns.x + ns.yyyy;\n  vec4 h = 1.0 - abs(x) - abs(y);\n\n  vec4 b0 = vec4( x.xy, y.xy );\n  vec4 b1 = vec4( x.zw, y.zw );\n\n  vec4 s0 = floor(b0)*2.0 + 1.0;\n  vec4 s1 = floor(b1)*2.0 + 1.0;\n  vec4 sh = -step(h, vec4(0.0));\n\n  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;\n  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;\n\n  vec3 p0 = vec3(a0.xy,h.x);\n  vec3 p1 = vec3(a0.zw,h.y);\n  vec3 p2 = vec3(a1.xy,h.z);\n  vec3 p3 = vec3(a1.zw,h.w);\n\n  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));\n  p0 *= norm.x;\n  p1 *= norm.y;\n  p2 *= norm.z;\n  p3 *= norm.w;\n\n  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);\n  m = m * m;\n  return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), \n                                dot(p2,x2), dot(p3,x3) ) );\n}\n\nvec3 snoiseVec3( vec3 x ){\n\n  float s  = snoise(vec3( x ));\n  float s1 = snoise(vec3( x.y - 19.1 , x.z + 33.4 , x.x + 47.2 ));\n  float s2 = snoise(vec3( x.z + 74.2 , x.x - 124.5 , x.y + 99.4 ));\n  vec3 c = vec3( s , s1 , s2 );\n  return c;\n\n}\n\nvec3 curlNoise( vec3 p ){\n  \n  const float e = .1;\n  vec3 dx = vec3( e   , 0.0 , 0.0 );\n  vec3 dy = vec3( 0.0 , e   , 0.0 );\n  vec3 dz = vec3( 0.0 , 0.0 , e   );\n\n  vec3 p_x0 = snoiseVec3( p - dx );\n  vec3 p_x1 = snoiseVec3( p + dx );\n  vec3 p_y0 = snoiseVec3( p - dy );\n  vec3 p_y1 = snoiseVec3( p + dy );\n  vec3 p_z0 = snoiseVec3( p - dz );\n  vec3 p_z1 = snoiseVec3( p + dz );\n\n  float x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;\n  float y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;\n  float z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;\n\n  const float divisor = 1.0 / ( 2.0 * e );\n  return normalize( vec3( x , y , z ) * divisor );\n\n}\n\nvoid main(void) {\n\n\tvec3 pos = texture2D(texturePos, vTextureCoord).rgb;\n\tvec3 vel = texture2D(textureVel, vTextureCoord).rgb;\n\tvec3 extra = texture2D(textureExtra, vTextureCoord).rgb;\n\n\tfloat posOffset = .2 * mix(extra.r, 1.0, .75);\n\n\tvec3 acc = curlNoise(pos*posOffset+time);\n\tacc += vec3(.25, .8, -.25);\n\tvel += acc * .025;\n\n\tfloat decrease = .7;\n\tif(length(pos) > 14.5) decrease = .3;\n\tif(length(pos) < 2.0) decrease = .5;\n\tvel *= decrease;\n\n    // gl_FragColor.g += .001;\n  gl_FragColor = vec4(vel, 1.0);\n}";
 		fs = fs.replace('{{NUM_PARTICLES}}', params.numParticles.toFixed(1));
 
 		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ViewSimulation).call(this, _alfrid2.default.ShaderLibs.bigTriangleVert, fs));
@@ -6480,7 +6591,7 @@ var ViewSimulation = function (_alfrid$View) {
 
 exports.default = ViewSimulation;
 
-},{"./libs/alfrid.js":25}],23:[function(require,module,exports){
+},{"./libs/alfrid.js":26}],24:[function(require,module,exports){
 'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
@@ -6579,7 +6690,7 @@ var ViewTree = function (_alfrid$View) {
 
 exports.default = ViewTree;
 
-},{"./libs/alfrid.js":25}],24:[function(require,module,exports){
+},{"./libs/alfrid.js":26}],25:[function(require,module,exports){
 'use strict';
 
 var _alfrid = require('./libs/alfrid.js');
@@ -6601,14 +6712,15 @@ var _datGui2 = _interopRequireDefault(_datGui);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 window.params = {
-	numParticles: 256 * 2,
+	numParticles: 256,
 	skipCount: 10,
 	range: 1.2,
 	speed: 1.5,
 	focus: .79,
 	minThreshold: .50,
 	maxThreshold: .80,
-	isInvert: false
+	isInvert: false,
+	numSlices: 2
 };
 
 var assets = [{ id: 'aomap', url: 'assets/aomap.jpg' }, { id: 'treeobj', url: 'assets/tree.obj', type: 'binary' }];
@@ -6671,7 +6783,7 @@ function _onKey(e) {
 	}
 }
 
-},{"./SceneApp":15,"./libs/alfrid.js":25,"assets-loader":4,"dat-gui":11}],25:[function(require,module,exports){
+},{"./SceneApp":15,"./libs/alfrid.js":26,"assets-loader":4,"dat-gui":11}],26:[function(require,module,exports){
 (function (global){
 "use strict";var _typeof=typeof Symbol==="function"&&typeof Symbol.iterator==="symbol"?function(obj){return typeof obj;}:function(obj){return obj&&typeof Symbol==="function"&&obj.constructor===Symbol?"symbol":typeof obj;};(function(f){if((typeof exports==="undefined"?"undefined":_typeof(exports))==="object"&&typeof module!=="undefined"){module.exports=f();}else if(typeof define==="function"&&define.amd){define([],f);}else {var g;if(typeof window!=="undefined"){g=window;}else if(typeof global!=="undefined"){g=global;}else if(typeof self!=="undefined"){g=self;}else {g=this;}g.alfrid=f();}})(function(){var define,module,exports;return function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f;}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e);},l,l.exports,e,t,n,r);}return n[o].exports;}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++){s(r[o]);}return s;}({1:[function(_dereq_,module,exports){ /**
  * @fileoverview gl-matrix - High performance matrix and vector operations
@@ -8488,8 +8600,9 @@ _GLTool2.default.viewport(0,0,this.width,this.height);gl.bindFramebuffer(gl.FRAM
 gl.bindTexture(gl.TEXTURE_2D,this.texture);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,this.magFilter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,this.minFilter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,this.wrapS);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,this.wrapT);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,this.width,this.height,0,gl.RGBA,_GLTool2.default.isMobile?gl.UNSIGNED_BYTE:gl.FLOAT,null);if(WEBGL_depth_texture){gl.bindTexture(gl.TEXTURE_2D,this.depthTexture);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,this.magFilter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,this.minFilter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,this.wrapS);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,this.wrapT);gl.texImage2D(gl.TEXTURE_2D,0,gl.DEPTH_COMPONENT,this.width,this.height,0,gl.DEPTH_COMPONENT,gl.UNSIGNED_SHORT,null);} //	GET COLOUR
 gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,this.texture,0); //	GET DEPTH
 gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,this.depthTexture,0);if(this.minFilter===gl.LINEAR_MIPMAP_NEAREST){gl.bindTexture(gl.TEXTURE_2D,this.texture);gl.generateMipmap(gl.TEXTURE_2D);} //	UNBIND
-gl.bindTexture(gl.TEXTURE_2D,null);gl.bindRenderbuffer(gl.RENDERBUFFER,null);gl.bindFramebuffer(gl.FRAMEBUFFER,null);} //	PUBLIC METHODS
-},{key:'bind',value:function bind(){_GLTool2.default.viewport(0,0,this.width,this.height);gl.bindFramebuffer(gl.FRAMEBUFFER,this.frameBuffer);}},{key:'unbind',value:function unbind(){gl.bindFramebuffer(gl.FRAMEBUFFER,null);_GLTool2.default.viewport(0,0,_GLTool2.default.width,_GLTool2.default.height);} //	TEXTURES
+gl.bindTexture(gl.TEXTURE_2D,null);gl.bindRenderbuffer(gl.RENDERBUFFER,null);gl.bindFramebuffer(gl.FRAMEBUFFER,null); //	CLEAR FRAMEBUFFER
+this.clear();} //	PUBLIC METHODS
+},{key:'bind',value:function bind(){_GLTool2.default.viewport(0,0,this.width,this.height);gl.bindFramebuffer(gl.FRAMEBUFFER,this.frameBuffer);}},{key:'unbind',value:function unbind(){gl.bindFramebuffer(gl.FRAMEBUFFER,null);_GLTool2.default.viewport(0,0,_GLTool2.default.width,_GLTool2.default.height);}},{key:'clear',value:function clear(){var r=arguments.length<=0||arguments[0]===undefined?0:arguments[0];var g=arguments.length<=1||arguments[1]===undefined?0:arguments[1];var b=arguments.length<=2||arguments[2]===undefined?0:arguments[2];var a=arguments.length<=3||arguments[3]===undefined?0:arguments[3];this.bind();_GLTool2.default.clear(r,g,b,a);this.unbind();} //	TEXTURES
 },{key:'getTexture',value:function getTexture(){return this.glTexture;}},{key:'getDepthTexture',value:function getDepthTexture(){return this.glDepthTexture;} //	MIPMAP FILTER
 },{key:'minFilter',value:function minFilter(mValue){if(mValue!==gl.LINEAR&&mValue!==gl.NEAREST&&mValue!==gl.LINEAR_MIPMAP_NEAREST){return this;}this.minFilter=mValue;return this;}},{key:'magFilter',value:function magFilter(mValue){if(mValue!==gl.LINEAR&&mValue!==gl.NEAREST&&mValue!==gl.LINEAR_MIPMAP_NEAREST){return this;}this.magFilter=mValue;return this;} //	WRAP
 },{key:'wrapS',value:function wrapS(mValue){if(mValue!==gl.CLAMP_TO_EDGE&&mValue!==gl.REPEAT&&mValue!==gl.MIRRORED_REPEAT){return this;}this.wrapS=mValue;return this;}},{key:'wrapT',value:function wrapT(mValue){if(mValue!==gl.CLAMP_TO_EDGE&&mValue!==gl.REPEAT&&mValue!==gl.MIRRORED_REPEAT){return this;}this.wrapT=mValue;return this;}}]);return FrameBuffer;}();exports.default=FrameBuffer;},{"./GLTexture":17,"./GLTool":18}],15:[function(_dereq_,module,exports){ // GLCubeTexture.js
@@ -8609,6 +8722,6 @@ break;}}this._highTasks=this._highTasks.concat(this._nextTasks);this._nextTasks=
 'use strict';Object.defineProperty(exports,"__esModule",{value:true});var ShaderLibs={simpleColorFrag:"#define GLSLIFY 1\n// simpleColor.frag\n\n#define SHADER_NAME SIMPLE_COLOR\n\nprecision highp float;\n\nuniform vec3 color;\nuniform float opacity;\n\nvoid main(void) {\n    gl_FragColor = vec4(color, opacity);\n}",bigTriangleVert:"#define GLSLIFY 1\n// bigTriangle.vert\n\n#define SHADER_NAME BIG_TRIANGLE_VERTEX\n\nprecision highp float;\nattribute vec2 aPosition;\nvarying vec2 vTextureCoord;\n\nvoid main(void) {\n    gl_Position = vec4(aPosition, 0.0, 1.0);\n    vTextureCoord = aPosition * .5 + .5;\n}",generalVert:"#define GLSLIFY 1\n// general.vert\n\n#define SHADER_NAME GENERAL_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\n\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\n\nvoid main(void) {\n\tvec3 pos      = aVertexPosition * scale;\n\tpos           += position;\n\tgl_Position   = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\tvTextureCoord = aTextureCoord;\n}",generalNormalVert:"#define GLSLIFY 1\n// generalWithNormal.vert\n\n#define SHADER_NAME GENERAL_VERTEX\n\nprecision highp float;\nattribute vec3 aVertexPosition;\nattribute vec2 aTextureCoord;\nattribute vec3 aNormal;\n\nuniform mat4 uModelMatrix;\nuniform mat4 uViewMatrix;\nuniform mat4 uProjectionMatrix;\nuniform mat3 uNormalMatrix;\n\nuniform vec3 position;\nuniform vec3 scale;\n\nvarying vec2 vTextureCoord;\nvarying vec3 vNormal;\n\nvoid main(void) {\n\tvec3 pos      = aVertexPosition * scale;\n\tpos           += position;\n\tgl_Position   = uProjectionMatrix * uViewMatrix * uModelMatrix * vec4(pos, 1.0);\n\t\n\tvTextureCoord = aTextureCoord;\n\tvNormal       = normalize(uNormalMatrix * aNormal);\n}"};exports.default=ShaderLibs;},{}]},{},[11])(11);}); 
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}]},{},[24]);
+},{}]},{},[25]);
 
 //# sourceMappingURL=bundle.js.map

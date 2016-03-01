@@ -5,14 +5,15 @@ import dat from 'dat-gui';
 
 
 window.params = {
-	numParticles:256*2,
+	numParticles:256,
 	skipCount:10,
 	range:1.2,
 	speed:1.5,
 	focus:.79,
 	minThreshold:.50,
 	maxThreshold:.80,
-	isInvert:false
+	isInvert:false,
+	numSlices:2
 };
 
 let assets = [

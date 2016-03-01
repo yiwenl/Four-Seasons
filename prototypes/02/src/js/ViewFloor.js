@@ -7,7 +7,8 @@ var glslify = require("glslify");
 class ViewFloor extends alfrid.View {
 	
 	constructor() {
-		super(null, alfrid.ShaderLibs.simpleColorFrag);
+		// super(null, alfrid.ShaderLibs.simpleColorFrag);
+		super(glslify('../shaders/floorShadow.vert'), glslify('../shaders/floorShadow.frag'));
 	}
 
 
@@ -48,10 +49,10 @@ class ViewFloor extends alfrid.View {
 				positions.push( getPos(i+1, j, y));
 				positions.push( getPos(i, j, y));
 
-				coords.push([0, 0]);
-				coords.push([1, 0]);
-				coords.push([1, 1]);
-				coords.push([0, 1]);
+				coords.push([i/numSeg, (j+1)/numSeg]);
+				coords.push([(i+1)/numSeg, (j+1)/numSeg]);
+				coords.push([(i+1)/numSeg, j/numSeg]);
+				coords.push([i/numSeg, j/numSeg]);
 
 				indices.push(count * 4 + 0);
 				indices.push(count * 4 + 1);
@@ -76,8 +77,12 @@ class ViewFloor extends alfrid.View {
 	}
 
 
-	render() {
+	render(shadowMatrix, lightPosition, textureDepth) {
 		this.shader.bind();
+		this.shader.uniform("lightPosition", "uniform3fv", lightPosition);
+		this.shader.uniform("uShadowMatrix", "uniformMatrix4fv", shadowMatrix);
+		this.shader.uniform("textureDepth", "uniform1i", 0);
+		textureDepth.bind(0);	
 		GL.draw(this.mesh);
 	}
 

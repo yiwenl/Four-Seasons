@@ -6,6 +6,8 @@ attribute vec2 aPointCoord;
 uniform mat4 uModelMatrix;
 uniform mat4 uViewMatrix;
 uniform mat4 uProjectionMatrix;
+uniform mat4 uShadowMatrix;
+uniform mat3 uNormalMatrix;
 
 uniform sampler2D texture;
 uniform sampler2D textureNext;
@@ -17,7 +19,15 @@ uniform vec2 uvOffset;
 uniform float numSlices;
 
 varying vec4 vColor;
+varying vec2 vTextureCoord;
 varying vec2 vPointCoord;
+varying vec4 vShadowCoord;
+varying vec4 vPosition;
+
+const mat4 biasMatrix = mat4( 0.5, 0.0, 0.0, 0.0,
+							  0.0, 0.5, 0.0, 0.0,
+							  0.0, 0.0, 0.5, 0.0,
+							  0.5, 0.5, 0.5, 1.0 );
 
 void main(void) {
 	float offset = 1.0;
@@ -36,6 +46,9 @@ void main(void) {
 	mvPosition.xyz  += aVertexPosition;
 	
 	gl_Position     = uProjectionMatrix * mvPosition;
+	vPosition       = mvPosition;
+	vTextureCoord   = aTextureCoord;
+	vShadowCoord    = ( biasMatrix * uShadowMatrix * uModelMatrix ) * vec4(pos, 1.0);
 	
 	vColor          = vec4(1.0, 0.7, 0.7, 1.0) * offset;
 	vPointCoord     = aPointCoord;
