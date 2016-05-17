@@ -78,6 +78,7 @@ float rand(vec2 co){
 uniform float time;
 uniform float maxRadius;
 uniform float noiseOffset;
+uniform float noiseDifference;
 uniform float windSpeed;
 
 void main(void) {
@@ -104,15 +105,16 @@ void main(void) {
 			vec3 extras = texture2D(textureExtra, uvExtra).rgb;
 
 
-			float posOffset = noiseOffset * mix(extras.r , 1.0, .5);
-			float ax = snoise(pos.x*posOffset + time, pos.y*posOffset + time, pos.z*posOffset + time) + .25;
-			float ay = snoise(pos.y*posOffset + time, pos.z*posOffset + time, pos.x*posOffset + time) + .4;
-			float az = snoise(pos.z*posOffset + time, pos.x*posOffset + time, pos.y*posOffset + time);
+			float posOffset = noiseOffset * mix(extras.r , 1.0, noiseDifference);
+			float xyScale = .5;
+			float ax = snoise(pos.x*posOffset + time, pos.y*posOffset + time, pos.z*posOffset + time) * xyScale + .35;
+			float ay = snoise(pos.y*posOffset + time, pos.z*posOffset + time, pos.x*posOffset + time) + .3;
+			float az = snoise(pos.z*posOffset + time, pos.x*posOffset + time, pos.y*posOffset + time) * xyScale;
 
-			float windStrength = windSpeed * mix(extras.g, 1.0, .25) + .01;
+			float windStrength = windSpeed * (mix(extras.g, 1.0, .5) + .01);
 			vel += vec3(ax, ay, az) * windStrength;
 
-			vel *= .98;
+			vel *= .95;
 
 			gl_FragColor = vec4(vel, 1.0);
 		}

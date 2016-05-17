@@ -3,31 +3,37 @@ precision mediump float;
 varying vec3 vColor;
 varying vec3 vNormal;
 
-const vec3 ambient = vec3(.1);
-const vec3 lightDir = vec3(1.0);
-const vec3 lightColor = vec3(1.0);
-const float lightWeight = .9;
+const float ambient_color = .65; 
+const vec3 ambient = vec3(ambient_color);
+const float lightWeight = .35;
+
+
 varying float vOpacity;
 varying float vDepth;
+varying vec2 vTextureCoord;
+varying vec2 vUVOffset;
+varying float vMixOffset;
 
-uniform float zFar;
-uniform float zNear;
+uniform vec3 lightColor;
+uniform vec3 lightDir;
+uniform sampler2D textureFlower;
+uniform sampler2D textureLeaves;
 
+const vec3 FOG_COLOR = vec3(243.0, 230.0, 214.0)/255.0;
 
-float getDepth(float z, float n, float f) {
-	return (2.0 * n) / (f + n - z*(f-n));
-}
 
 void main(void) {
-    gl_FragColor = vec4(vColor, vOpacity);
+    // gl_FragColor = texture2D(textureFlower, vTextureCoord * .5 + vUVOffset);
+    vec4 colorFlower = texture2D(textureFlower, vTextureCoord * .5 + vUVOffset);
+    vec4 colorLeaves = texture2D(textureLeaves, vTextureCoord * .5 + vUVOffset);
+    gl_FragColor = mix(colorFlower, colorLeaves, vMixOffset);
+
+
+    gl_FragColor.a *= vOpacity;
+    if(gl_FragColor.a < .1) discard;
 
     float lambert = max(dot(vNormal, normalize(lightDir)), 0.0);
-    float D = 1.0-getDepth(vDepth, zNear, zFar);
 
-    gl_FragColor.rgb = ambient + lightColor * lambert * lightWeight;
-    // gl_FragColor.rgb *= D;
-    gl_FragColor.rgb = vec3(D);
-
-
-    // gl_FragColor.rgb = (vNormal + 1.0) * .5;
+    gl_FragColor.rgb *= ambient + lightColor/255.0 * lambert * lightWeight;
+    gl_FragColor.rgb = mix(gl_FragColor.rgb, FOG_COLOR, pow(vDepth, 2.0));
 }
