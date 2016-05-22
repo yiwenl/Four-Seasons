@@ -1,7 +1,7 @@
 // PBRObject.js
 
 class PBRObject {
-	constructor(mMesh) {
+	constructor(mMesh, oParameters={}) {
 		this._mesh = mMesh;
 
 		this.baseColor = [1, 1, 1];
@@ -19,6 +19,10 @@ class PBRObject {
 		this.colorMap;
 		this.bumpMap;
 		this.aoMap;
+
+		for (let s in oParameters) {
+			this[s] = oParameters[s];
+		}
 
 		this._init();
 	}

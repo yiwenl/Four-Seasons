@@ -25,16 +25,15 @@ class SceneApp extends alfrid.Scene {
 		const meshTerrain = alfrid.ObjLoader.parse(getAsset('obj_terrain'));
 
 		this._pbrEnv = new PBREnvironment(this._textureRad, this._textureIrr, 5, 2.2);
-		this._pTree = new PBRObject(meshTree);
-		this._pTerrain = new PBRObject(meshTerrain);
-		this._pTerrain.specular = .5;
-		this._pTerrain.baseColor = [.1, .1, .1];
-		this._pTree.aoMap = this._textureAoTree;
-		this._pTerrain.aoMap = this._textureAoTerrain;
-		this._pTerrain.bumpMap = this._textureNoise;
-		this._pTerrain.bumpScale = 10.0;
-		this._pTerrain.bumpSize = 1.0;
-
+		this._pTree = new PBRObject(meshTree, {aoMap:new alfrid.GLTexture(getAsset('aoTree'))});
+		this._pTerrain = new PBRObject(meshTerrain, {
+			aoMap: new alfrid.GLTexture(getAsset('aoTerrain')),
+			bumpMap: this._textureNoise,
+			specular: .5,
+			bumpScale: 10.0,
+			bumpSize: 0.5,
+			baseColor: [.1, .1, .1],
+		});
 
 		this._pbrEnv.addChild(this._pTree);
 		this._pbrEnv.addChild(this._pTerrain);
@@ -61,8 +60,6 @@ class SceneApp extends alfrid.Scene {
 
 		this._textureRad = new alfrid.GLCubeTexture([rad_posx, rad_negx, rad_posy, rad_negy, rad_posz, rad_negz]);
 
-		this._textureAoTree = new alfrid.GLTexture(getAsset('aoTree'));
-		this._textureAoTerrain = new alfrid.GLTexture(getAsset('aoTerrain'));
 		this._textureNoise = new alfrid.GLTexture(getAsset('noise'));
 	}
 
@@ -84,7 +81,7 @@ class SceneApp extends alfrid.Scene {
 		this._bAxis.draw();
 		this._bDots.draw();
 
-		this._bSkybox.draw(this._textureRad);
+		// this._bSkybox.draw(this._textureRad);
 		this._pbrEnv.render();
 	}
 
