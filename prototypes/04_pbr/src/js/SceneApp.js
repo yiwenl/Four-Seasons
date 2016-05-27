@@ -33,7 +33,14 @@ class SceneApp extends alfrid.Scene {
 			bumpScale: 10.0,
 			bumpSize: 0.5,
 			baseColor: [.1, .1, .1],
+			scale:[2, 1, 2]
 		});
+
+		let fTerrain = gui.addFolder('Terrain');
+		fTerrain.add(this._pTerrain, 'roughness', 0, .9);
+		fTerrain.add(this._pTerrain, 'specular', 0, 1);
+		fTerrain.add(this._pTerrain, 'metallic', 0, 1);
+		fTerrain.open();
 
 		this._pbrEnv.addChild(this._pTree);
 		this._pbrEnv.addChild(this._pTerrain);

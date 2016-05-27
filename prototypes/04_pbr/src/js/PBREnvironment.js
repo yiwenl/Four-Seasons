@@ -10,6 +10,8 @@ class PBREnvironment {
 		this._textureIrr = mTextureIrr;
 		this.exporsure = mExposure;
 		this.gamma = mGamma;
+		this.envMapOffset = 0.5;
+		this.saturationBeforeEnvMap = 0.0;
 
 		this._init();
 	}
@@ -21,11 +23,18 @@ class PBREnvironment {
 		this.shader.uniform("uColorMap", "uniform1i", 0);
 		this.shader.uniform("uAoMap", "uniform1i", 1);
 		this.shader.uniform("uBumpMap", "uniform1i", 2);
-		this.shader.uniform("uRadianceMap", "uniform1i", 3);
-		this.shader.uniform("uIrradianceMap", "uniform1i", 4);
+		this.shader.uniform("uEnvMap", "uniform1i", 3);
+		this.shader.uniform("uRadianceMap", "uniform1i", 4);
+		this.shader.uniform("uIrradianceMap", "uniform1i", 5);
 
-		this._textureRad.bind(3);
-		this._textureIrr.bind(4);
+		this._textureEnvmap = new alfrid.GLTexture(getAsset('envmap'));
+
+		this._textureEnvmap.bind(3);
+		this._textureRad.bind(4);
+		this._textureIrr.bind(5);
+
+		gui.add(this, 'envMapOffset', 0, 1);
+		gui.add(this, 'saturationBeforeEnvMap', 0, 1);
 	}
 
 
@@ -69,6 +78,8 @@ class PBREnvironment {
 
 			this.shader.uniform("uExposure", "float", this.exporsure);
 			this.shader.uniform("uGamma", "float", this.gamma);
+			this.shader.uniform("uEnvOffset", "float", this.envMapOffset);
+			this.shader.uniform("uSaturation", "float", this.saturationBeforeEnvMap);
 
 			GL.draw(child.mesh);
 		});

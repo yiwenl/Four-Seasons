@@ -9,6 +9,7 @@ const assets = [
 	{id:'aoTree', url:'assets/img/aoTree.jpg'},
 	{id:'aoTerrain', url:'assets/img/aoTerrain.jpg'},
 	{id:'noise', url:'assets/img/noise.jpg'},
+	{id:'envmap', url:'assets/img/bg.jpg'},
 	{id:'obj_tree', url:'assets/obj/tree.obj', type:'text'},
 	{id:'obj_terrain', url:'assets/obj/terrain.obj', type:'text'},
 	{id:'irr_posx', url:'assets/img/irr_posx.hdr', type:'binary'},
