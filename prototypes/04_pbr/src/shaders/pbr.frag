@@ -7,6 +7,7 @@ precision highp float;
 uniform sampler2D 	uAoMap;
 uniform sampler2D 	uColorMap;
 uniform sampler2D 	uBumpMap;
+uniform sampler2D 	uEnvMap;
 uniform samplerCube uRadianceMap;
 uniform samplerCube uIrradianceMap;
 
@@ -19,6 +20,8 @@ uniform float		uExposure;
 uniform float		uGamma;
 uniform float 		uBumpSize;
 uniform float 		uBumpScale;
+uniform float 		uEnvOffset;
+uniform float 		uSaturation;
 
 varying vec3        vNormal;
 varying vec3        vPosition;
@@ -28,8 +31,10 @@ varying vec3		vWsPosition;
 varying vec2 		vTextureCoord;
 
 #define saturate(x) clamp(x, 0.0, 1.0)
-#define PI 3.1415926535897932384626433832795
 
+
+const float PI = 3.1415926535897932384626433832795;
+const float TwoPI = 3.1415926535897932384626433832795;
 
 // Filmic tonemapping from
 // http://filmicgames.com/archives/75
@@ -99,6 +104,25 @@ vec3 getPbr(vec3 N, vec3 V, vec3 baseColor, float roughness, float metallic, flo
 	return color;
 }
 
+
+vec2 envMapEquirect(vec3 wcNormal, float flipEnvMap) {
+  //I assume envMap texture has been flipped the WebGL way (pixel 0,0 is a the bottom)
+  //therefore we flip wcNorma.y as acos(1) = 0
+  float phi = acos(-wcNormal.y);
+  float theta = atan(flipEnvMap * wcNormal.x, wcNormal.z) + PI;
+  return vec2(theta / TwoPI, phi / PI);
+}
+
+vec2 envMapEquirect(vec3 wcNormal) {
+    //-1.0 for left handed coordinate system oriented texture (usual case)
+    return envMapEquirect(wcNormal, -1.0);
+}
+
+vec3 greyscale(vec3 color) {
+	float grey = (color.r + color.g + color.b) / 3.0;
+	return vec3(grey);
+}
+
 void main() {
 	vec3 bump 			= texture2D( uBumpMap, vTextureCoord * uBumpScale ).rgb * 2.0 - 1.0;
 	vec3 N 				= normalize( vWsNormal + bump * uBumpSize );
@@ -109,6 +133,14 @@ void main() {
 
 	vec3 ao 			= texture2D(uAoMap, vTextureCoord).rgb;
 	color 				*= ao;
+
+	vec2 uv 			= envMapEquirect(vWsNormal);
+	vec3 colorEnv 		= texture2D(uEnvMap, uv).rgb;
+	colorEnv 			= mix(vec3(1.0), colorEnv, uEnvOffset);
+
+	vec3 colorGrey 		= greyscale(color);
+	color 				= mix(colorGrey, color, uSaturation);
+	color 				*= colorEnv;
 
 	// apply the tone-mapping
 	color				= Uncharted2Tonemap( color * uExposure );
