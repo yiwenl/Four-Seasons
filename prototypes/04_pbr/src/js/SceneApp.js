@@ -3,7 +3,7 @@
 import alfrid , { Scene, GL } from 'alfrid';
 import PBREnvironment from './PBREnvironment';
 import PBRObject from './PBRObject';
-
+const RAD = Math.PI/180;
 
 window.getAsset = function(id) {
 	for(var i=0; i<assets.length; i++) {
@@ -19,21 +19,32 @@ class SceneApp extends alfrid.Scene {
 		super();
 
 		GL.enableAlphaBlending();
-		this.orbitalControl.rx.value = this.orbitalControl.ry.value = 0.3;
+		this.camera.setPerspective(70 * RAD, GL.aspectRatio, .1, 50);
+		let v = vec3.fromValues(-3, .37, -2);
+		this.orbitalControl.radius.setTo(5);
+		this.orbitalControl.radius.value = 4.02;
+
+		this.orbitalControl.center[1] = 1.35;
+		this.orbitalControl.positionOffset[1] = 0.25;
+		this.orbitalControl.rx.value = .1;
+		this.orbitalControl.rx.limit(.1, .15);
+		this.orbitalControl.lockZoom(true);
 
 		const meshTree = alfrid.ObjLoader.parse(getAsset('obj_tree'));
 		const meshTerrain = alfrid.ObjLoader.parse(getAsset('obj_terrain'));
+		const grey = 0.25;
 
 		this._pbrEnv = new PBREnvironment(this._textureRad, this._textureIrr, 5, 2.2);
 		this._pTree = new PBRObject(meshTree, {aoMap:new alfrid.GLTexture(getAsset('aoTree'))});
 		this._pTerrain = new PBRObject(meshTerrain, {
 			aoMap: new alfrid.GLTexture(getAsset('aoTerrain')),
 			bumpMap: this._textureNoise,
-			specular: .5,
+			metallic: .1,
+			roughness:0.94,
 			bumpScale: 10.0,
 			bumpSize: 0.5,
-			baseColor: [.1, .1, .1],
-			scale:[2, 1, 2]
+			baseColor: [grey, grey, grey],
+			scale: [2, 1, 2],
 		});
 
 		let fTerrain = gui.addFolder('Terrain');
@@ -75,20 +86,16 @@ class SceneApp extends alfrid.Scene {
 		console.log('init views');
 		
 		this._bCopy = new alfrid.BatchCopy();
-		this._bAxis = new alfrid.BatchAxis();
-		this._bDots = new alfrid.BatchDotsPlane();
 		this._bBall = new alfrid.BatchBall();
 		this._bSkybox = new alfrid.BatchSkybox();
 	}
 
 
 	render() {
-		this.orbitalControl.ry.value += 0.01;
+		params.globalTime += 0.01;
 		GL.clear(0, 0, 0, 0);
-		this._bAxis.draw();
-		this._bDots.draw();
 
-		// this._bSkybox.draw(this._textureRad);
+		this._bSkybox.draw(this._textureRad);
 		this._pbrEnv.render();
 	}
 

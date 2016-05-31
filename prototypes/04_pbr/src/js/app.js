@@ -28,6 +28,10 @@ const assets = [
 	{id:'rad_negz', url:'assets/img/rad_negz.hdr', type:'binary'}
 ];
 
+window.params = {
+	globalTime: Math.random() * 0xFF,
+}
+
 if(document.body) {
 	_init();
 } else {
